@@ -1,7 +1,7 @@
 const express = require("express");
 const evaluationRoutes = require("./routes/evaluationRoutes");
 
-const app = express(); 
+const app = express();
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -14,8 +14,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json()); 
-
+app.use(express.json());
 app.use("/api", evaluationRoutes);
 
 const PORT = 5000;

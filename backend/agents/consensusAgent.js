@@ -1,13 +1,17 @@
 class ConsensusAgent {
-  calculate(agentOutputs = []) {
-    // Basic consensus: average scores and collect trace
-    const trace = agentOutputs.map(a => ({ agent: a.agent, score: a.score, comments: a.comments }));
-    const avg = agentOutputs.reduce((s, a) => s + (a.score || 0), 0) / Math.max(1, agentOutputs.length);
-    const decision = avg >= 0.6 ? "Hire" : "No-Hire";
+  calculate(agentOutputs) {
+    const scores = agentOutputs.map(output => output.score || 0);
+    const averageScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    const recommendation = averageScore >= 6.5 ? "Hire" : "No Hire";
+
     return {
-      decision,
-      averageScore: Number(avg.toFixed(2)),
-      trace
+      decision: recommendation,
+      averageScore: Number(averageScore.toFixed(2)),
+      trace: agentOutputs.map(output => ({
+        agent: output.agentName,
+        score: output.score,
+        recommendation: output.recommendation
+      }))
     };
   }
 }
