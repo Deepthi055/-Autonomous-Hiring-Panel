@@ -1,10 +1,9 @@
 const express = require("express");
 const evaluationRoutes = require("./routes/evaluationRoutes");
 
-const app = express(); 
+const app = express();
 
-app.use(express.json()); 
-
+app.use(express.json());
 app.use("/api", evaluationRoutes);
 
 const PORT = 5000;
