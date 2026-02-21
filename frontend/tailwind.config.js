@@ -2,23 +2,24 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,jsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+      },
       colors: {
-        indigo: {
-          50: '#f0f4ff',
-          600: '#4f46e5',
-          700: '#4338ca',
-        },
-        purple: {
-          600: '#9333ea',
-          700: '#7e22ce',
+        slate: {
+          950: '#0a0f1e',
         },
       },
       animation: {
         'spin-slow': 'spin 3s linear infinite',
+        'pulse-soft': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
       },
     },
   },

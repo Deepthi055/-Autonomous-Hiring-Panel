@@ -15,10 +15,34 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json());
-app.use("/api", evaluationRoutes);
+
+try {
+  app.use("/api", evaluationRoutes);
+} catch (error) {
+  console.error("Error loading routes:", error.message);
+}
 
 const PORT = 5000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Handle errors
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  process.exit(1);
+});
+
+server.on("error", (error) => {
+  console.error("Server error:", error);
+  if (error.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} is already in use`);
+  }
+  process.exit(1);
 });

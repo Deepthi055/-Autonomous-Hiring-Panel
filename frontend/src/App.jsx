@@ -1,245 +1,250 @@
-import { useState } from 'react';
-import { ThemeProvider } from './ThemeContext';
-import Navigation from './components/Navigation';
-import Header from './components/Header';
-import EvaluationForm from './components/EvaluationForm';
-import SummaryCard from './components/SummaryCard';
-import PerformanceChart from './components/PerformanceChart';
-import AgentBreakdownChart from './components/AgentBreakdownChart';
-import ResultsDashboard from './components/ResultsDashboard';
-import About from './components/About';
-import { useTheme } from './ThemeContext';
+import React, { useState } from 'react';
+import Stepper from './components/Stepper';
+import ToastContainer from './components/ToastContainer';
+import JobSetupPage from './pages/JobSetupPage';
+import ResumeInputPage from './pages/ResumeInputPage';
+import QuestionsPage from './pages/QuestionsPage';
+import RecordingPage from './pages/RecordingPage';
+import EvaluationPage from './pages/EvaluationPage';
+import { useToast } from './hooks/useToast';
+import { Brain, Sparkles } from 'lucide-react';
 
-// Mock data for demonstration without backend
-const MOCK_EVALUATION_RESULT = {
-  resume: {
-    score: 0.85,
-    strengths: [
-      'Strong experience in JavaScript and React',
-      'Clear career progression and achievements',
-      'AWS certifications documented',
-      'Leadership experience highlighted'
-    ],
-    concerns: [
-      'Some gaps in Python proficiency'
-    ],
-    gaps: [
-      'Limited DevOps experience',
-      'No mention of Docker expertise'
-    ],
-    contradictions: [],
-  },
-  technical: {
-    score: 0.78,
-    strengths: [
-      'Solid JavaScript and React knowledge',
-      'AWS certification matches job requirements',
-      'Full-stack development experience'
-    ],
-    concerns: [
-      'Python skills not deeply demonstrated',
-      'Limited cloud infrastructure examples'
-    ],
-    gaps: [
-      'Microservices architecture experience',
-      'Kubernetes knowledge'
-    ],
-    contradictions: [],
-  },
-  behavioral: {
-    score: 0.82,
-    strengths: [
-      'Clear team leadership experience',
-      'Communication skills evident',
-      'Collaboration demonstrated in projects',
-      'Mentoring of junior developers'
-    ],
-    concerns: [
-      'Limited conflict resolution examples'
-    ],
-    gaps: [
-      'Agile methodology not explicitly mentioned'
-    ],
-    contradictions: [],
-  },
-  claims: {
-    score: 0.88,
-    strengths: [
-      'All certifications appear legitimate',
-      'Job titles match timeline',
-      'Verifiable achievements'
-    ],
-    concerns: [],
-    gaps: [],
-    contradictions: [],
-  },
-  consensus: {
-    finalScore: 0.83,
-    confidenceLevel: 0.82,
-    verdict: 'Hire',
-    summary: 'Strong candidate with excellent technical and behavioral fit for the role. Recommend moving to interview stage.',
-  },
+const STEPS = {
+  JOB: 1,
+  RESUME: 2,
+  QUESTIONS: 3,
+  RECORDING: 4,
+  EVALUATION: 5,
 };
 
-function AppContent({ onNavigateToAbout }) {
-  const { isDark } = useTheme();
-  const [results, setResults] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+function App() {
+  const [currentStep, setCurrentStep] = useState(STEPS.JOB);
 
-  const handleEvaluate = async (formData) => {
-    setLoading(true);
-    setError(null);
+  // Step 1 state
+  const [jobDescription, setJobDescription] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
 
-    try {
-      const response = await fetch('/api/evaluate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+  // Step 2 state
+  const [resumeContent, setResumeContent] = useState('');
+  const [uploadedFile, setUploadedFile] = useState(null);
 
-      if (!response.ok) {
-        // Fallback to mock data if backend is unavailable
-        console.warn('Backend unavailable, using mock data for demonstration');
-        setResults(MOCK_EVALUATION_RESULT);
-        setLoading(false);
-        return;
-      }
+  // Step 3 state
+  const [questions, setQuestions] = useState([]);
 
-      const data = await response.json();
-      
-      // Transform backend response to component-friendly format
-      const transformedData = transformBackendResponse(data);
-      setResults(transformedData);
-    } catch (err) {
-      console.warn('Backend connection failed, loading mock data:', err.message);
-      // Fallback to mock data on network error
-      setResults(MOCK_EVALUATION_RESULT);
-    } finally {
-      setLoading(false);
+  // Step 4 state
+  const [transcript, setTranscript] = useState('');
+
+  // Step 5 state
+  const [evaluationData, setEvaluationData] = useState(null);
+
+  const { toasts, addToast, removeToast } = useToast();
+
+  // Navigation handlers
+  const goTo = (step) => {
+    setCurrentStep(step);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleStep1Continue = () => {
+    if (!selectedRole) {
+      addToast('Please select a role to continue.', 'error');
+      return;
+    }
+    if (jobDescription.trim().length < 30) {
+      addToast('Please provide a more detailed job description.', 'error');
+      return;
+    }
+    goTo(STEPS.RESUME);
+    addToast('Job setup complete!', 'success');
+  };
+
+  const handleStep2Continue = () => {
+    if (!resumeContent.trim() && !uploadedFile) {
+      addToast('Please provide resume content to continue.', 'error');
+      return;
+    }
+    goTo(STEPS.QUESTIONS);
+    addToast('Generating AI interview questions...', 'info');
+  };
+
+  const handleStep3Continue = () => {
+    if (questions.length === 0) {
+      addToast('Please wait for questions to be generated.', 'error');
+      return;
+    }
+    goTo(STEPS.RECORDING);
+    addToast('Starting interview recording session.', 'info');
+  };
+
+  const handleStep4Continue = () => {
+    goTo(STEPS.EVALUATION);
+    addToast('Submitting for AI evaluation...', 'info');
+  };
+
+  const handleRestart = () => {
+    setJobDescription('');
+    setSelectedRole('');
+    setResumeContent('');
+    setUploadedFile(null);
+    setQuestions([]);
+    setTranscript('');
+    setEvaluationData(null);
+    goTo(STEPS.JOB);
+    addToast('Started a new evaluation session.', 'info');
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case STEPS.JOB:
+        return (
+          <JobSetupPage
+            jobDescription={jobDescription}
+            setJobDescription={setJobDescription}
+            selectedRole={selectedRole}
+            setSelectedRole={setSelectedRole}
+            onContinue={handleStep1Continue}
+          />
+        );
+      case STEPS.RESUME:
+        return (
+          <ResumeInputPage
+            resumeContent={resumeContent}
+            setResumeContent={setResumeContent}
+            uploadedFile={uploadedFile}
+            setUploadedFile={setUploadedFile}
+            onContinue={handleStep2Continue}
+            onBack={() => goTo(STEPS.JOB)}
+          />
+        );
+      case STEPS.QUESTIONS:
+        return (
+          <QuestionsPage
+            selectedRole={selectedRole}
+            resumeContent={resumeContent}
+            questions={questions}
+            setQuestions={setQuestions}
+            onContinue={handleStep3Continue}
+            onBack={() => goTo(STEPS.RESUME)}
+          />
+        );
+      case STEPS.RECORDING:
+        return (
+          <RecordingPage
+            transcript={transcript}
+            setTranscript={setTranscript}
+            onContinue={handleStep4Continue}
+            onBack={() => goTo(STEPS.QUESTIONS)}
+          />
+        );
+      case STEPS.EVALUATION:
+        return (
+          <EvaluationPage
+            selectedRole={selectedRole}
+            resumeContent={resumeContent}
+            transcript={transcript}
+            evaluationData={evaluationData}
+            setEvaluationData={setEvaluationData}
+            onRestart={handleRestart}
+          />
+        );
+      default:
+        return null;
     }
   };
 
-  const handleLoadDemoData = () => {
-    setResults(MOCK_EVALUATION_RESULT);
-  };
-
-  const transformBackendResponse = (backendData) => {
-    // Extract agent outputs for detailed cards
-    const agentOutputs = backendData.rawAgentOutputs || [];
-    
-    // Map agent data
-    const Resume = agentOutputs.find(a => a.agent === 'ResumeAgent') || {};
-    const Technical = agentOutputs.find(a => a.agent === 'TechnicalAgent') || {};
-    const Behavioral = agentOutputs.find(a => a.agent === 'BehavioralAgent') || {};
-    const Claims = agentOutputs.find(a => a.agent === 'ClaimAgent') || {};
-    const Consensus = backendData.candidateAssessment || {};
-
-    return {
-      resume: {
-        score: Resume.score || 0,
-        strengths: Resume.strengths || [Resume.comments || 'Resume analysis completed'],
-        concerns: Resume.concerns || [],
-        gaps: Resume.gaps || [],
-        contradictions: Resume.contradictions || [],
-      },
-      technical: {
-        score: Technical.score || 0,
-        strengths: Technical.strengths || [Technical.comments || 'Technical assessment completed'],
-        concerns: Technical.concerns || [],
-        gaps: Technical.gaps || [],
-        contradictions: Technical.contradictions || [],
-      },
-      behavioral: {
-        score: Behavioral.score || 0,
-        strengths: Behavioral.strengths || [Behavioral.comments || 'Behavioral evaluation completed'],
-        concerns: Behavioral.concerns || [],
-        gaps: Behavioral.gaps || [],
-        contradictions: Behavioral.contradictions || [],
-      },
-      claims: {
-        score: Claims.score || 0,
-        strengths: Claims.strengths || [Claims.comments || 'Claims verification completed'],
-        concerns: Claims.concerns || [],
-        gaps: Claims.gaps || [],
-        contradictions: Claims.contradictions || [],
-      },
-      consensus: {
-        finalScore: backendData.candidateAssessment?.consensus?.averageScore || 
-                   (agentOutputs.length > 0 
-                     ? agentOutputs.reduce((sum, a) => sum + (a.score || 0), 0) / agentOutputs.length 
-                     : 0),
-        confidenceLevel: backendData.candidateAssessment?.confidence || 
-                        (agentOutputs.length > 0 ? 0.75 : 0),
-        verdict: backendData.candidateAssessment?.verdict || 'No-Hire',
-        summary: backendData.candidateAssessment?.summary || 'Evaluation completed',
-      },
-    };
-  };
-
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <Navigation onAboutClick={onNavigateToAbout} />
-      <Header />
-      
-      <main className="max-w-6xl mx-auto px-4 py-12">
-        <div className="space-y-8">
-          {/* Demo Data Button (shown when no results) */}
-          {!results && (
-            <div className="text-center mb-6">
-              <button
-                onClick={handleLoadDemoData}
-                className="inline-block bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200 text-base shadow-md"
-              >
-                View Demo Results
-              </button>
-              <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} text-sm mt-3`}>
-                Click to see the dashboard with sample evaluation data (no backend required)
-              </p>
+    <div className="min-h-screen bg-slate-950 bg-grid">
+      {/* Toast notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* Header / Navbar */}
+      <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-xl">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/30">
+                <Brain className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-white font-bold text-lg leading-none">DataVex<span className="text-indigo-400">.ai</span></h1>
+                <p className="text-slate-500 text-xs">Intelligent Hiring System</p>
+              </div>
             </div>
-          )}
 
-          <EvaluationForm 
-            onEvaluate={handleEvaluate} 
-            loading={loading} 
-            error={error}
-          />
-          
-          {results && (
-            <>
-              <SummaryCard data={results} />
-              <PerformanceChart data={results} />
-              <AgentBreakdownChart data={results} />
-              <ResultsDashboard data={results} />
-            </>
-          )}
+            {/* Nav actions */}
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                AI Active
+              </span>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <div
+                    key={s}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${s === currentStep ? 'bg-indigo-400 scale-125' : s < currentStep ? 'bg-emerald-500' : 'bg-slate-700'
+                      }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
-    </div>
-  );
-}
+      </header>
 
-function App() {
-  const [showAbout, setShowAbout] = useState(false);
+      {/* Hero Section (only on step 1) */}
+      {currentStep === STEPS.JOB && (
+        <div className="relative overflow-hidden border-b border-slate-800/50">
+          {/* Gradient orbs */}
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
 
-  const handleNavigateToAbout = () => {
-    setShowAbout(true);
-  };
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 text-center relative">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium mb-6">
+              <Sparkles className="w-3.5 h-3.5" />
+              AI-Powered Recruitment Platform
+            </div>
+            <h2 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight">
+              Hire smarter with{' '}
+              <span className="gradient-text">AI-driven</span>{' '}
+              insights
+            </h2>
+            <p className="text-slate-400 text-lg max-w-xl mx-auto leading-relaxed">
+              Streamline your recruitment process — from job setup to candidate evaluation — powered by multi-agent AI.
+            </p>
 
-  const handleBackFromAbout = () => {
-    setShowAbout(false);
-  };
-
-  return (
-    <ThemeProvider>
-      {showAbout ? (
-        <About onBack={handleBackFromAbout} />
-      ) : (
-        <AppContent onNavigateToAbout={handleNavigateToAbout} />
+            <div className="flex flex-wrap gap-4 justify-center mt-8 text-sm">
+              {['AI Question Generation', 'Interview Recording', 'Speech to Text', 'Multi-agent Evaluation', 'Analytics Dashboard'].map(feat => (
+                <span key={feat} className="flex items-center gap-2 text-slate-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                  {feat}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
-    </ThemeProvider>
+
+      {/* Main content */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        {/* Stepper */}
+        <Stepper currentStep={currentStep} />
+
+        {/* Page content */}
+        {renderStep()}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800/60 mt-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Brain className="w-4 h-4 text-indigo-400" />
+            <span className="text-slate-500 text-sm">DataVex.ai — Intelligent Hiring System</span>
+          </div>
+          <p className="text-slate-600 text-xs">Built with React 18 + Tailwind CSS + Recharts</p>
+        </div>
+      </footer>
+    </div>
   );
 }
 
