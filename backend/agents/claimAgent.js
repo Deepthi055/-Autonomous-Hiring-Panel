@@ -1,123 +1,75 @@
-/**
- * claimAgent.js
- *
- * Cross-references resume claims against interview transcript statements
- * to detect inflated claims, unsupported achievements, and contradictions.
- * Provides a credibility assessment for the DataVex evaluation pipeline.
- */
+const { callOpenAI } = require('./openaiClient');
 
-const { claimVerificationPrompt } = require("./promptTemplates");
-const { normalizeScore, scoreToRecommendation } = require("./scoringUtils");
+async function evaluate(inputData) {
+  const { resume, transcript } = inputData;
 
-/** Default result returned when evaluation cannot be completed. */
-const FALLBACK_RESULT = {
-  agentName: "ClaimAgent",
-  score: 0,
-  strengths: [],
-  concerns: ["Evaluation could not be completed"],
-  gaps: [],
-  contradictions: [],
-  reasoning: "The claim verification failed due to an error.",
-  recommendation: "No Hire",
-};
-
-class ClaimAgent {
-  /**
-   * @param {string} resume         - Candidate resume text
-   * @param {string} transcript     - Interview transcript
-   * @param {string} jobDescription - Target job description
-   */
-  constructor(resume, transcript, jobDescription) {
-    if (!resume || typeof resume !== "string") {
-      throw new Error("ClaimAgent requires a non-empty resume string.");
-    }
-    if (!transcript || typeof transcript !== "string") {
-      throw new Error("ClaimAgent requires a non-empty transcript string.");
-    }
-    if (!jobDescription || typeof jobDescription !== "string") {
-      throw new Error("ClaimAgent requires a non-empty jobDescription string.");
-    }
-
-    this.resume = resume;
-    this.transcript = transcript;
-    this.jobDescription = jobDescription;
-    this.agentName = "ClaimAgent";
+  if (!resume || !transcript) {
+    throw new Error('Missing required fields: resume and transcript');
   }
 
-  /**
-   * Builds the LLM prompt for claim verification.
-   *
-   * @returns {string} Structured prompt string
-   */
-  buildPrompt() {
-    return claimVerificationPrompt(this.resume, this.transcript, this.jobDescription);
-  }
+  const systemPrompt = `You are a fact-checking specialist at DataVex.ai verifying claims made in resumes against interview transcripts.
 
-  /**
-   * Parses and validates the raw LLM response into a structured result.
-   *
-   * @param {string} rawResponse - Raw JSON string from the LLM
-   * @returns {Object} Validated evaluation result
-   */
-  parseResponse(rawResponse) {
-    if (!rawResponse || typeof rawResponse !== "string") {
-      throw new Error("ClaimAgent received an empty or non-string response.");
-    }
+Your evaluation criteria:
+1. Consistency between resume claims and transcript explanations
+2. Ability to substantiate resume claims with concrete examples
+3. Inflated vs realistic skill representation
+4. Unproven claims or vague references
+5. Contradictions between what they claim and what they demonstrate
 
-    let parsed;
-    try {
-      parsed = JSON.parse(rawResponse);
-    } catch (err) {
-      const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error(`ClaimAgent failed to parse LLM response as JSON: ${err.message}`);
-      }
-    }
+Penalize:
+- Inflated skill claims not backed by transcript examples
+- Vague claims without supporting evidence
+- Direct contradictions between resume and transcript
+- Inability to explain or substantiate claimed expertise
+- Overstatement of role or impact
 
-    return {
-      agentName: this.agentName,
-      score: normalizeScore(parsed.score),
-      credibilityScore: normalizeScore(parsed.credibilityScore),
-      inflatedClaims: Array.isArray(parsed.inflatedClaims) ? parsed.inflatedClaims : [],
-      unsupportedAchievements: Array.isArray(parsed.unsupportedAchievements)
-        ? parsed.unsupportedAchievements
-        : [],
-      verifiedClaims: Array.isArray(parsed.verifiedClaims) ? parsed.verifiedClaims : [],
-      strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
-      concerns: Array.isArray(parsed.concerns) ? parsed.concerns : [],
-      gaps: Array.isArray(parsed.gaps) ? parsed.gaps : [],
-      contradictions: Array.isArray(parsed.contradictions) ? parsed.contradictions : [],
-      reasoning: parsed.reasoning || "",
-      recommendation: parsed.recommendation || scoreToRecommendation(parsed.score),
-    };
-  }
+Return ONLY a valid JSON object with this exact structure:
+{
+  "strengths": ["strength1", "strength2", ...],
+  "concerns": ["concern1", "concern2", ...],
+  "contradictions": ["contradiction1", "contradiction2", ...],
+  "score": <number 0-10>,
+  "recommendation": "Hire" | "No Hire"
+}`;
 
-  /**
-   * Runs the full evaluation pipeline.
-   *
-   * @param {Object} llmClient - LLM client with an async `complete(prompt)` method
-   * @returns {Promise<Object>} Structured evaluation result
-   */
-  async evaluate(llmClient) {
-    try {
-      if (!llmClient || typeof llmClient.complete !== "function") {
-        throw new Error("ClaimAgent.evaluate() requires an llmClient with a complete() method.");
-      }
+  const userPrompt = `Cross-verify resume claims against what the candidate said in the interview.
 
-      const prompt = this.buildPrompt();
-      const rawResponse = await llmClient.complete(prompt);
-      return this.parseResponse(rawResponse);
-    } catch (error) {
-      console.error(`[ClaimAgent] Evaluation failed: ${error.message}`);
-      return {
-        ...FALLBACK_RESULT,
-        concerns: [`Evaluation failed: ${error.message}`],
-        reasoning: `The claim verification encountered an error: ${error.message}`,
-      };
-    }
-  }
+RESUME:
+${resume}
+
+INTERVIEW TRANSCRIPT:
+${transcript}
+
+Identify consistencies, contradictions, inflated claims, and unsubstantiated assertions. Flag skill claims that aren't backed by concrete examples or explanations in the transcript.`;
+
+  const rawResponse = await callOpenAI(systemPrompt, userPrompt);
+
+  const score = validateScore(rawResponse.score);
+  const recommendation = validateRecommendation(rawResponse.recommendation);
+
+  return {
+    agentName: 'claimAgent',
+    score,
+    strengths: rawResponse.strengths || [],
+    concerns: rawResponse.concerns || [],
+    contradictions: rawResponse.contradictions || [],
+    recommendation,
+  };
 }
 
-module.exports = ClaimAgent;
+function validateScore(score) {
+  const numScore = parseFloat(score);
+  if (isNaN(numScore) || numScore < 0 || numScore > 10) {
+    throw new Error(`Invalid score: ${score}. Must be between 0 and 10.`);
+  }
+  return Math.round(numScore * 10) / 10;
+}
+
+function validateRecommendation(rec) {
+  if (rec === 'Hire' || rec === 'No Hire') {
+    return rec;
+  }
+  throw new Error(`Invalid recommendation: ${rec}. Must be "Hire" or "No Hire".`);
+}
+
+module.exports = { evaluate };
