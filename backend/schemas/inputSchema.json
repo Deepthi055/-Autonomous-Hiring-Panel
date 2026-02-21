@@ -1,0 +1,12 @@
+{
+  "$id": "https://example.com/schemas/inputSchema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CandidateEvaluationInput",
+  "type": "object",
+  "required": ["resume", "transcript", "jobDescription"],
+  "properties": {
+    "resume": { "type": "string", "minLength": 1 },
+    "transcript": { "type": "string", "minLength": 1 },
+    "jobDescription": { "type": "string", "minLength": 1 }
+  }
+}
