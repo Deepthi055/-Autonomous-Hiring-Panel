@@ -2,14 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import { Mic, Pause, Play, Square, Trash2, Clock, CheckCircle, ArrowRight, ArrowLeft, Loader2, FileText } from 'lucide-react';
 
 export default function InterviewRecorder({ onNext, onBack, data }) {
-  const [recordingState, setRecordingState] = useState('idle'); // idle, recording, paused, stopped
+  const [recordingState, setRecordingState] = useState('idle');
   const [recordings, setRecordings] = useState([]);
   const [currentRecording, setCurrentRecording] = useState(null);
   const [timer, setTimer] = useState(0);
   const [transcribing, setTranscribing] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [isPlaying, setIsPlaying] = useState(null);
+  const [audioBlob, setAudioBlob] = useState(null);
   const timerRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   useEffect(() => {
     if (recordingState === 'recording') {
@@ -19,35 +22,57 @@ export default function InterviewRecorder({ onNext, onBack, data }) {
     } else {
       clearInterval(timerRef.current);
     }
-
     return () => clearInterval(timerRef.current);
   }, [recordingState]);
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
 
-  const startRecording = () => {
-    setRecordingState('recording');
-    setTimer(0);
-    setCurrentRecording({
-      id: Date.now(),
-      duration: 0,
-      timestamp: new Date().toLocaleTimeString(),
-    });
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current.start();
+      setRecordingState('recording');
+      setTimer(0);
+      setCurrentRecording({
+        id: Date.now(),
+        duration: 0,
+        timestamp: new Date().toLocaleTimeString(),
+      });
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert('Could not access microphone. Please ensure microphone permissions are granted.');
+    }
   };
 
   const pauseRecording = () => {
-    setRecordingState('paused');
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.pause();
+      setRecordingState('paused');
+    }
   };
 
   const resumeRecording = () => {
-    setRecordingState('recording');
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+      mediaRecorderRef.current.resume();
+      setRecordingState('recording');
+    }
   };
 
   const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
     setRecordingState('stopped');
     if (currentRecording) {
       setRecordings(prev => [...prev, { ...currentRecording, duration: timer }]);
@@ -63,29 +88,44 @@ export default function InterviewRecorder({ onNext, onBack, data }) {
     setTimeout(() => setIsPlaying(null), 2000);
   };
 
-  const handleTranscribe = () => {
+  const handleTranscribe = async () => {
+    if (!audioBlob) {
+      alert('No recording available to transcribe');
+      return;
+    }
+    
     setTranscribing(true);
-    // Simulate transcription
-    setTimeout(() => {
+    
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      
+      const response = await fetch('/api/interview/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.transcript) {
+        setTranscript(result.transcript);
+      } else {
+        setTranscript(`This is a simulated transcript of the interview recording.
+
+Interviewer: Can you tell me about your experience with React?
+
+Candidate: Absolutely. I've been working with React for about 4 years now.`);
+      }
+    } catch (error) {
+      console.error('Transcription error:', error);
       setTranscript(`This is a simulated transcript of the interview recording.
 
 Interviewer: Can you tell me about your experience with React?
 
-Candidate: Absolutely. I've been working with React for about 4 years now. I started with class components and then moved to hooks when they were introduced. I've built several large-scale applications using React, including an e-commerce platform and a real-time dashboard.
-
-Interviewer: What state management solutions have you used?
-
-Candidate: I've primarily used Redux for large applications, but I also have experience with Context API for simpler state management. Recently, I've been exploring Zustand and Jotai for their simplicity.
-
-Interviewer: How do you handle performance optimization in React?
-
-Candidate: There are several approaches I use. First, I make sure to use React.memo for components that don't need to re-render often. I also use useMemo and useCallback to prevent unnecessary re-renders. For large lists, I implement virtualization using libraries like react-window or react-virtual.
-
-Interviewer: Thank you for your detailed answers. That's all the questions I have today.
-
-Candidate: Thank you for the opportunity. I look forward to hearing from you.`);
+Candidate: Absolutely. I've been working with React for about 4 years now.`);
+    } finally {
       setTranscribing(false);
-    }, 2000);
+    }
   };
 
   const handleSubmit = () => {
@@ -96,6 +136,12 @@ Candidate: Thank you for the opportunity. I look forward to hearing from you.`);
     });
   };
 
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="animate-fadeIn">
       <div className="text-center mb-8">
@@ -104,9 +150,7 @@ Candidate: Thank you for the opportunity. I look forward to hearing from you.`);
       </div>
 
       <div className="max-w-3xl mx-auto">
-        {/* Recording Interface */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-8">
-          {/* Status Indicator */}
           <div className="flex justify-center mb-6">
             <div className={`
               px-6 py-2 rounded-full font-medium flex items-center gap-2
@@ -137,14 +181,12 @@ Candidate: Thank you for the opportunity. I look forward to hearing from you.`);
             </div>
           </div>
 
-          {/* Timer Display */}
           <div className="text-center mb-8">
             <div className="text-5xl font-bold text-gray-800 font-mono">
               {formatTime(timer)}
             </div>
           </div>
 
-          {/* Waveform Animation */}
           {recordingState === 'recording' && (
             <div className="flex justify-center items-center gap-1 mb-8 h-16">
               {[...Array(20)].map((_, i) => (
@@ -160,7 +202,6 @@ Candidate: Thank you for the opportunity. I look forward to hearing from you.`);
             </div>
           )}
 
-          {/* Record Button */}
           <div className="flex justify-center gap-4">
             {recordingState === 'idle' && (
               <button
@@ -217,13 +258,12 @@ Candidate: Thank you for the opportunity. I look forward to hearing from you.`);
 
           <p className="text-center text-gray-400 text-sm mt-6">
             {recordingState === 'idle' && 'Click to start recording'}
-            {recordingState === 'recording' && 'Recording in progress...'}
+            {recordingState === 'recording' && 'Recording in progress... Click stop to finish'}
             {recordingState === 'paused' && 'Recording paused'}
             {recordingState === 'stopped' && 'Click the mic button to start a new recording'}
           </p>
         </div>
 
-        {/* Recordings List */}
         {recordings.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
             <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -268,7 +308,6 @@ Candidate: Thank you for the opportunity. I look forward to hearing from you.`);
           </div>
         )}
 
-        {/* Transcript Section */}
         {recordings.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -304,15 +343,10 @@ Candidate: Thank you for the opportunity. I look forward to hearing from you.`);
           </div>
         )}
 
-        {/* Navigation Buttons */}
         <div className="flex justify-between">
           <button
             onClick={onBack}
-            className="
-              flex items-center gap-2 bg-gray-100 hover:bg-gray-200
-              text-gray-700 font-semibold py-3 px-6 rounded-xl
-              transition-all duration-200
-            "
+            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200"
           >
             <ArrowLeft size={20} />
             Back
@@ -320,14 +354,7 @@ Candidate: Thank you for the opportunity. I look forward to hearing from you.`);
           <button
             onClick={handleSubmit}
             disabled={recordings.length === 0}
-            className="
-              flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 
-              hover:from-indigo-700 hover:to-purple-700 
-              text-white font-semibold py-3 px-8 rounded-xl
-              transition-all duration-200 shadow-lg shadow-indigo-200
-              hover:shadow-xl hover:scale-[1.02]
-              disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
-            "
+            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             Submit for AI Evaluation
             <ArrowRight size={20} />

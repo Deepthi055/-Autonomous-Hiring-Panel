@@ -1,12 +1,15 @@
 // orchestrator/panelOrchestrator.js
 
-// Import agents (adjust paths if needed)
+// Import agents
 const ResumeAgent = require("../agents/resumeAgent");
 const TechnicalAgent = require("../agents/technicalAgent");
 const BehavioralAgent = require("../agents/behavioralAgent");
 const ClaimAgent = require("../agents/claimAgent");
 const SkepticAgent = require("../agents/skepticAgent");
 const ConsensusAgent = require("../agents/consensusAgent");
+
+// Import LLM client (uses Cerebras)
+const llmClient = require("../services/llmClient");
 
 async function runPanelEvaluation(inputData) {
   try {
@@ -23,9 +26,9 @@ async function runPanelEvaluation(inputData) {
       new SkepticAgent(resume, transcript, jobDescription)
     ];
 
-    // Run all agents safely
+    // Run all agents with LLM client (using Cerebras)
     const results = await Promise.allSettled(
-      agents.map(agent => agent.evaluate())
+      agents.map(agent => agent.evaluate(llmClient))
     );
 
     const successfulAgents = [];
@@ -45,15 +48,19 @@ async function runPanelEvaluation(inputData) {
     }
 
     // Run consensus logic
-    const consensusAgent = new ConsensusAgent();
-    const consensusResult = consensusAgent.calculate(successfulAgents);
+    const consensusAgent = new ConsensusAgent(resume, transcript, jobDescription);
+    
+    // Use evaluate to leverage the agent's full capabilities (including LLM if configured)
+    // This returns a structured object with recommendation, reasoning, etc.
+    const consensusResult = await consensusAgent.evaluate(llmClient, successfulAgents);
 
     // Normalize output shape expected by report generator
     return {
       agentOutputs: successfulAgents,
       failedAgents,
-      finalDecision: consensusResult.decision,
-      trace: consensusResult.trace,
+      // Map the new agent output format to what the report generator expects
+      finalDecision: consensusResult.recommendation,
+      trace: consensusResult.reasoning,
       consensus: consensusResult
     };
 

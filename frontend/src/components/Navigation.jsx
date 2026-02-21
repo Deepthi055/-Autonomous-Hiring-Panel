@@ -1,4 +1,4 @@
-import { Moon, Sun, Brain } from 'lucide-react';
+import { Moon, Sun, BrainCircuit } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
 export default function Navigation({ onAboutClick }) {
@@ -9,9 +9,9 @@ export default function Navigation({ onAboutClick }) {
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <Brain size={32} className="text-indigo-600" />
+          <BrainCircuit size={32} className="text-indigo-600" />
           <div className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            VerdictAI
+            DataVex.ai
           </div>
         </div>
 
