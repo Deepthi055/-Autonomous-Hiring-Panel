@@ -1,10 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { FileText, Upload, X, Check, ArrowRight, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 
-export default function ResumeInput({ onNext, onBack, data }) {
+export default function ResumeInput({ onNext, onBack, data, onUpdate }) {
   const [activeTab, setActiveTab] = useState('paste');
   const [resumeContent, setResumeContent] = useState(data?.resumeContent || '');
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [candidateName, setCandidateName] = useState(data?.candidateName || '');
+  const [candidateEmail, setCandidateEmail] = useState(data?.candidateEmail || '');
+  const [candidatePhone, setCandidatePhone] = useState(data?.candidatePhone || '');
   const [isDragging, setIsDragging] = useState(false);
   const [errors, setErrors] = useState({});
   const [isProcessing, setIsProcessing] = useState(false);
@@ -12,6 +15,35 @@ export default function ResumeInput({ onNext, onBack, data }) {
   const [uploadError, setUploadError] = useState('');
 
   const fileInputRef = useRef(null);
+
+  // Auto-extract details when resume content changes
+  useEffect(() => {
+    if (!resumeContent) return;
+
+    // Extract Email
+    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/;
+    const foundEmail = resumeContent.match(emailRegex);
+    if (foundEmail) {
+      setCandidateEmail(foundEmail[0]);
+    }
+
+    // Extract Phone
+    const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
+    const foundPhone = resumeContent.match(phoneRegex);
+    if (foundPhone) {
+      setCandidatePhone(foundPhone[0]);
+    }
+
+    // Extract Name (Heuristic: Use filename if available, otherwise first non-empty line)
+    if (!candidateName) {
+      if (uploadedFile) {
+        setCandidateName(uploadedFile.name.replace(/\.[^/.]+$/, ""));
+      } else {
+        const firstLine = resumeContent.split('\n').find(l => l.trim().length > 0);
+        if (firstLine) setCandidateName(firstLine.trim().substring(0, 50));
+      }
+    }
+  }, [resumeContent, uploadedFile]);
 
   /* ============================= */
   /* Drag & Drop */
@@ -79,6 +111,18 @@ export default function ResumeInput({ onNext, onBack, data }) {
 
       if (result.success && result.resumeText) {
         setResumeContent(result.resumeText);
+        
+        // Use backend extracted metadata if available
+        if (result.candidateName) {
+          setCandidateName(result.candidateName);
+        }
+        if (result.candidateEmail) {
+          setCandidateEmail(result.candidateEmail);
+        }
+        if (result.candidatePhone) {
+          setCandidatePhone(result.candidatePhone);
+        }
+        
         setProcessingStatus('Text extracted successfully!');
       } else {
         setUploadError(result.error || 'Failed to extract text.');
@@ -100,15 +144,23 @@ export default function ResumeInput({ onNext, onBack, data }) {
   };
 
   const handleContinue = () => {
+    const finalName = candidateName.trim() || (uploadedFile ? uploadedFile.name : "Candidate");
+
     if (!resumeContent.trim()) {
-      setErrors({ content: 'Please provide resume content or upload a file' });
+      setErrors({ ...errors, content: 'Please provide resume content or upload a file' });
       return;
     }
 
-    onNext({
+    const payload = {
       resumeContent,
       uploadedFile,
-    });
+      candidateName: finalName,
+      candidateEmail,
+      candidatePhone
+    };
+
+    if (onUpdate) onUpdate(payload);
+    onNext(payload);
   };
 
   return (

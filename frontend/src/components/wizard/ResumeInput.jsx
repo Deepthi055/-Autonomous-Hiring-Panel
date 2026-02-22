@@ -1,16 +1,48 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { FileText, Upload, X, Check, ArrowRight, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 
 export default function ResumeInput({ onNext, onBack, data }) {
-  const [activeTab, setActiveTab] = useState(data?.resumeContent ? 'paste' : 'paste');
+  const [activeTab, setActiveTab] = useState(data?.uploadedFile ? 'upload' : 'paste');
   const [resumeContent, setResumeContent] = useState(data?.resumeContent || '');
   const [uploadedFile, setUploadedFile] = useState(data?.uploadedFile || null);
+  const [candidateName, setCandidateName] = useState(data?.candidateName || '');
+  const [candidateEmail, setCandidateEmail] = useState(data?.candidateEmail || '');
+  const [candidatePhone, setCandidatePhone] = useState(data?.candidatePhone || '');
   const [isDragging, setIsDragging] = useState(false);
   const [errors, setErrors] = useState({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef(null);
+
+  // Auto-extract details when resume content changes
+  useEffect(() => {
+    if (!resumeContent) return;
+
+    // Extract Email
+    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/;
+    const foundEmail = resumeContent.match(emailRegex);
+    if (foundEmail) {
+      setCandidateEmail(foundEmail[0]);
+    }
+
+    // Extract Phone
+    const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
+    const foundPhone = resumeContent.match(phoneRegex);
+    if (foundPhone) {
+      setCandidatePhone(foundPhone[0]);
+    }
+
+    // Extract Name (Heuristic: Use filename if available, otherwise first non-empty line)
+    if (!candidateName) {
+      if (uploadedFile) {
+        setCandidateName(uploadedFile.name.replace(/\.[^/.]+$/, ""));
+      } else {
+        const firstLine = resumeContent.split('\n').find(l => l.trim().length > 0);
+        if (firstLine) setCandidateName(firstLine.trim().substring(0, 50));
+      }
+    }
+  }, [resumeContent, uploadedFile]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -102,16 +134,20 @@ export default function ResumeInput({ onNext, onBack, data }) {
   };
 
   const handleContinue = () => {
+    const finalName = candidateName.trim() || (uploadedFile ? uploadedFile.name : "Candidate");
     const content = activeTab === 'paste' ? resumeContent : resumeContent;
-    
+
     if (!content.trim()) {
-      setErrors({ content: 'Please provide resume content or upload a file' });
+      setErrors({ ...errors, content: 'Please provide resume content or upload a file' });
       return;
     }
 
     onNext({
       resumeContent: content,
       uploadedFile,
+      candidateName: finalName,
+      candidateEmail,
+      candidatePhone
     });
   };
 
@@ -126,14 +162,14 @@ export default function ResumeInput({ onNext, onBack, data }) {
         <div className="bg-gray-100 p-1 rounded-xl inline-flex">
           <button
             onClick={() => setActiveTab('paste')}
-            className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${activeTab === 'paste' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${activeTab === 'paste' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             <FileText size={18} />
             Paste Resume
           </button>
           <button
             onClick={() => setActiveTab('upload')}
-            className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${activeTab === 'upload' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${activeTab === 'upload' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             <Upload size={18} />
             Upload Resume
@@ -253,13 +289,14 @@ export default function ResumeInput({ onNext, onBack, data }) {
         )}
       </div>
 
-      <div className="flex justify-between mt-8">
-        <button onClick={onBack} className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
+      {/* Navigation Buttons */}
+      <div className="flex justify-between gap-4 mt-8 max-w-2xl mx-auto">
+        <button onClick={onBack} className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200 whitespace-nowrap">
           <ArrowLeft size={20} />
           Back
         </button>
-        <button onClick={handleContinue} disabled={isProcessing} className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed">
-          Generate Interview Questions
+        <button onClick={handleContinue} disabled={isProcessing} className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+          <span>Generate Questions</span>
           <ArrowRight size={20} />
         </button>
       </div>

@@ -92,9 +92,9 @@ export default function HiringWizard() {
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">D</span>
+              <span className="text-white font-bold text-lg">V</span>
             </div>
-            <h1 className="text-xl font-bold text-gray-800">DataVex.ai</h1>
+            <h1 className="text-xl font-bold text-gray-800">VerdictAI</h1>
           </div>
         </div>
       </div>

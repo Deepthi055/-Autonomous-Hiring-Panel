@@ -5,8 +5,9 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, TrendingDown, AlertTriangle, CheckCircle, XCircle, 
-  MessageSquare, RotateCcw, Award, Target, Brain, Shield, ArrowLeft, ArrowRight
+  RotateCcw, Target, Brain, Shield, ArrowLeft
 } from 'lucide-react';
+import ReportGenerator from '../ReportGenerator';
 
 const COLORS = ['#4f46e5', '#8b5cf6', '#06b6d4', '#10b981'];
 
@@ -50,7 +51,6 @@ export default function EvaluationDashboard({ data, onRestart, onBack }) {
   
   const handleReevaluate = () => {
     setIsReevaluating(true);
-    // Simulate re-evaluation
     setTimeout(() => {
       setEvaluation(generateMockEvaluation(data));
       setIsReevaluating(false);
@@ -64,28 +64,24 @@ export default function EvaluationDashboard({ data, onRestart, onBack }) {
   };
   
   const handleGoToInterview = () => {
-    // Go to interview recording step (step 4)
     if (onBack) {
       onBack(4);
     }
   };
   
   const handleGoToQuestions = () => {
-    // Go to questions step (step 3)
     if (onBack) {
       onBack(3);
     }
   };
   
   const handleGoToResume = () => {
-    // Go to resume step (step 2)
     if (onBack) {
       onBack(2);
     }
   };
   
   const handleGoToJobSetup = () => {
-    // Go to job setup step (step 1)
     if (onBack) {
       onBack(1);
     }
@@ -114,6 +110,13 @@ export default function EvaluationDashboard({ data, onRestart, onBack }) {
     return 'bg-rose-100 text-rose-700 border-rose-200';
   };
 
+  // Prepare data for ReportGenerator
+  const reportData = {
+    candidateName: data?.candidateName || 'Candidate',
+    candidateEmail: data?.candidateEmail || '',
+    evaluationResult: evaluation
+  };
+
   return (
     <div className="animate-fadeIn">
       <div className="text-center mb-8">
@@ -128,24 +131,8 @@ export default function EvaluationDashboard({ data, onRestart, onBack }) {
           <h3 className="text-lg font-semibold text-gray-700 mb-4">Final Score</h3>
           <div className="relative w-40 h-40">
             <svg className="w-full h-full transform -rotate-90">
-              <circle
-                cx="80"
-                cy="80"
-                r="70"
-                fill="none"
-                stroke="#e5e7eb"
-                strokeWidth="12"
-              />
-              <circle
-                cx="80"
-                cy="80"
-                r="70"
-                fill="none"
-                stroke="url(#gradient)"
-                strokeWidth="12"
-                strokeLinecap="round"
-                strokeDasharray={`${evaluation.finalScore * 4.4} 440`}
-              />
+              <circle cx="80" cy="80" r="70" fill="none" stroke="#e5e7eb" strokeWidth="12" />
+              <circle cx="80" cy="80" r="70" fill="none" stroke="url(#gradient)" strokeWidth="12" strokeLinecap="round" strokeDasharray={`${evaluation.finalScore * 4.4} 440`} />
               <defs>
                 <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#4f46e5" />
@@ -168,20 +155,11 @@ export default function EvaluationDashboard({ data, onRestart, onBack }) {
         {/* Recommendation Badge */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 flex flex-col items-center justify-center">
           <h3 className="text-lg font-semibold text-gray-700 mb-4">Recommendation</h3>
-          <div className={`
-            px-8 py-4 rounded-xl border-2 flex items-center gap-3 text-xl font-bold
-            ${getBadgeColor(evaluation.verdict)}
-          `}>
+          <div className={`px-8 py-4 rounded-xl border-2 flex items-center gap-3 text-xl font-bold ${getBadgeColor(evaluation.verdict)}`}>
             {evaluation.verdict === 'Hire' ? (
-              <>
-                <CheckCircle size={32} />
-                HIRE
-              </>
+              <><CheckCircle size={32} /> HIRE</>
             ) : (
-              <>
-                <XCircle size={32} />
-                NO HIRE
-              </>
+              <><XCircle size={32} /> NO HIRE</>
             )}
           </div>
           <p className="mt-4 text-gray-500 text-sm text-center">
@@ -195,15 +173,7 @@ export default function EvaluationDashboard({ data, onRestart, onBack }) {
           <div className="w-full h-40">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={70}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value">
                   {pieData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={index === 0 ? '#4f46e5' : '#e5e7eb'} />
                   ))}
@@ -233,13 +203,7 @@ export default function EvaluationDashboard({ data, onRestart, onBack }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                 <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
                 <YAxis stroke="#6b7280" fontSize={12} domain={[0, 100]} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#fff', 
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px'
-                  }}
-                />
+                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }} />
                 <Bar dataKey="score" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -255,18 +219,10 @@ export default function EvaluationDashboard({ data, onRestart, onBack }) {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
-                  data={[
+                <Pie data={[
                     { name: 'Matched Skills', value: evaluation.skillAlignment, color: '#4f46e5' },
                     { name: 'Technical Gaps', value: 22, color: '#f59e0b' },
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}%`}
-                  labelLine={true}
-                >
+                  ]} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}%`} labelLine={true}>
                   {[
                     { name: 'Matched Skills', value: evaluation.skillAlignment, color: '#4f46e5' },
                     { name: 'Technical Gaps', value: 22, color: '#f59e0b' },
@@ -365,56 +321,37 @@ export default function EvaluationDashboard({ data, onRestart, onBack }) {
       <div className="bg-gray-50 rounded-xl p-4 mb-8">
         <h4 className="font-semibold text-gray-700 mb-3">View Previous Steps</h4>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={handleGoToJobSetup}
-            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors"
-          >
+          <button onClick={handleGoToJobSetup} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors">
             Step 1: Job Setup
           </button>
-          <button
-            onClick={handleGoToResume}
-            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors"
-          >
+          <button onClick={handleGoToResume} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors">
             Step 2: Resume
           </button>
-          <button
-            onClick={handleGoToQuestions}
-            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors"
-          >
+          <button onClick={handleGoToQuestions} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors">
             Step 3: Questions
           </button>
-          <button
-            onClick={handleGoToInterview}
-            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors"
-          >
+          <button onClick={handleGoToInterview} className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors">
             Step 4: Interview Recording
           </button>
         </div>
       </div>
 
+      {/* Report Generator */}
+      <ReportGenerator data={reportData} />
+
       {/* Action Buttons */}
-      <div className="flex flex-wrap justify-center gap-4">
-        <button
-          onClick={handleGoBack}
-          className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200"
-        >
+      <div className="flex flex-wrap justify-center gap-4 mt-8">
+        <button onClick={handleGoBack} className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200">
           <ArrowLeft size={20} />
           Back to Interview
         </button>
         
-        <button
-          onClick={handleReevaluate}
-          disabled={isReevaluating}
-          className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-amber-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+        <button onClick={handleReevaluate} disabled={isReevaluating} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-amber-200 disabled:opacity-50 disabled:cursor-not-allowed">
           <RotateCcw size={20} className={isReevaluating ? 'animate-spin' : ''} />
           {isReevaluating ? 'Re-evaluating...' : 'Re-evaluate'}
         </button>
         
-        <button
-          onClick={onRestart}
-          className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-[1.02]"
-        >
+        <button onClick={onRestart} className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-[1.02]">
           <RotateCcw size={20} />
           Start New Evaluation
         </button>

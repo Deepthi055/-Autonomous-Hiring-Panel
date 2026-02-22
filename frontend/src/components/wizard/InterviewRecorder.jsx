@@ -343,10 +343,11 @@ Candidate: Absolutely. I've been working with React for about 4 years now.`);
           </div>
         )}
 
-        <div className="flex justify-between">
+        {/* Navigation Buttons */}
+        <div className="flex justify-between gap-4">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200"
+            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200 whitespace-nowrap"
           >
             <ArrowLeft size={20} />
             Back
@@ -354,9 +355,9 @@ Candidate: Absolutely. I've been working with React for about 4 years now.`);
           <button
             onClick={handleSubmit}
             disabled={recordings.length === 0}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 whitespace-nowrap"
           >
-            Submit for AI Evaluation
+            <span>Submit for Evaluation</span>
             <ArrowRight size={20} />
           </button>
         </div>

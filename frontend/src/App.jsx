@@ -13,6 +13,7 @@ import SummaryCard from './components/SummaryCard';
 import PerformanceChart from './components/PerformanceChart';
 import ResultsDashboard from './components/ResultsDashboard';
 import About from './components/About';
+import ReportGenerator from './components/ReportGenerator';
 import { useTheme } from './ThemeContext';
 
 // Mock data for demonstration without backend
@@ -96,7 +97,7 @@ function AppContent({ onNavigateToAbout }) {
 
   // Wizard State
   const [jobData, setJobData] = useState({ role: '', description: '' });
-  const [resumeData, setResumeData] = useState({ content: '', fileName: null });
+  const [resumeData, setResumeData] = useState({ content: '', fileName: null, candidateName: '', candidateEmail: '', candidatePhone: '' });
   const [questions, setQuestions] = useState([]);
   const [transcript, setTranscript] = useState('');
 
@@ -107,7 +108,7 @@ function AppContent({ onNavigateToAbout }) {
     setError(null);
 
     try {
-      const response = await fetch('/api/evaluate', {
+      const response = await fetch('/api/interview/evaluate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +122,6 @@ function AppContent({ onNavigateToAbout }) {
         setResults(MOCK_EVALUATION_RESULT);
         setLoading(false);
         return;
-        throw new Error(`Backend returned ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -239,8 +239,11 @@ function AppContent({ onNavigateToAbout }) {
             {currentStep === 1 && (
               <ResumeInput 
                 data={resumeData} 
-                onUpdate={(updates) => setResumeData({...resumeData, ...updates})} 
-                onNext={() => setCurrentStep(2)} 
+                onUpdate={(updates) => setResumeData(prev => ({...prev, ...updates}))} 
+                onNext={(data) => {
+                  setResumeData(prev => ({...prev, ...data}));
+                  setCurrentStep(2);
+                }} 
                 onBack={() => setCurrentStep(0)}
               />
             )}
@@ -274,21 +277,44 @@ function AppContent({ onNavigateToAbout }) {
                   </div>
                 )}
 
+                {!loading && !results && (
+                  <div className="flex flex-col items-center justify-center h-64 text-center">
+                    <div className="text-gray-400 mb-4">No evaluation results available.</div>
+                    <button 
+                      onClick={handleFinalSubmit}
+                      className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                    >
+                      Retry Evaluation
+                    </button>
+                  </div>
+                )}
+
                 {!loading && results && (
                   <>
                     <SummaryCard data={results} />
                     <div className="w-full">
                       <PerformanceChart data={results} />
                     </div>
-                    <ResultsDashboard data={(() => {
-                      const { consensus, ...agentResults } = results;
-                      return agentResults;
-                    })()} />
+                    <ResultsDashboard data={{
+                      resume: results.resume,
+                      technical: results.technical,
+                      behavioral: results.behavioral,
+                      claims: results.claims
+                    }} />
                     
-                    <div className="flex justify-center pt-8">
+                    <div className="flex flex-wrap justify-center gap-4 pt-8">
+                      <ReportGenerator 
+                        data={{
+                          candidateName: resumeData.candidateName,
+                          candidateEmail: resumeData.candidateEmail,
+                          candidatePhone: resumeData.candidatePhone,
+                          evaluationResult: results
+                        }} 
+                        className="" 
+                      />
                       <button 
                         onClick={() => window.location.reload()}
-                        className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800 transition"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
                       >
                         Start New Evaluation
                       </button>

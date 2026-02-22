@@ -193,31 +193,31 @@ export default function QuestionGenerator({ data, onNext, onBack }) {
           </div>
 
           {/* Regenerate and Shuffle Buttons */}
-          <div className="flex justify-center gap-4 mb-8">
+          <div className="flex justify-center gap-4 mb-8 flex-wrap">
             <button
               onClick={shuffleQuestions}
-              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium transition-colors px-4 py-2 rounded-lg hover:bg-indigo-50"
+              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium transition-colors px-4 py-2 rounded-lg hover:bg-indigo-50 whitespace-nowrap"
             >
               <Shuffle size={18} />
-              Shuffle Questions
+              Shuffle
             </button>
             <button
               onClick={regenerateQuestions}
-              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium transition-colors px-4 py-2 rounded-lg hover:bg-indigo-50"
+              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium transition-colors px-4 py-2 rounded-lg hover:bg-indigo-50 whitespace-nowrap"
             >
               <RefreshCw size={18} />
-              Regenerate Questions
+              Regenerate
             </button>
           </div>
         </>
       )}
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between">
+      <div className="flex justify-between gap-4">
         <button
           onClick={onBack}
           disabled={isGenerating}
-          className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         >
           <ArrowLeft size={20} />
           Back
@@ -225,10 +225,10 @@ export default function QuestionGenerator({ data, onNext, onBack }) {
         <button
           onClick={handleStartRecording}
           disabled={isGenerating}
-          className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 whitespace-nowrap"
         >
           <MessageSquare size={20} />
-          Start Interview Recording
+          <span>Start Interview</span>
           <ArrowRight size={20} />
         </button>
       </div>
