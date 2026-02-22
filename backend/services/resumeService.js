@@ -24,45 +24,22 @@ class ResumeService {
 
       console.log('Extracting text from:', filePath);
 
-      // Method 1: Try pdf-lib for text extraction
-      try {
-        const { PDFDocument } = require('pdf-lib');
-        const pdfBytes = fs.readFileSync(filePath);
-        const pdfDoc = await PDFDocument.load(pdfBytes);
-        
-        let fullText = '';
-        const pageCount = pdfDoc.getPageCount();
-        
-        for (let i = 0; i < pageCount; i++) {
-          const page = pdfDoc.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map(item => item.str).join(' ');
-          fullText += pageText + '\n\n';
-        }
-
-        if (fullText.trim().length > 50) {
-          console.log(`Successfully extracted ${pageCount} pages using pdf-lib`);
-          return this.cleanText(fullText);
-        }
-      } catch (pdfLibError) {
-        console.log('pdf-lib extraction failed:', pdfLibError.message);
-      }
-
-      // Method 2: Fallback to pdf-parse
+      // Use pdf-parse (most reliable for text-based PDFs)
       try {
         const pdf = require('pdf-parse');
         const dataBuffer = fs.readFileSync(filePath);
         const data = await pdf(dataBuffer);
         
-        if (data.text && data.text.trim().length > 50) {
-          console.log('Successfully extracted text using pdf-parse');
-          return this.cleanText(data.text);
+        if (data.text && data.text.trim().length > 10) {
+          const cleanedText = this.cleanText(data.text);
+          console.log(`✅ Successfully extracted ${data.numpages} pages | ${cleanedText.length} characters using pdf-parse`);
+          return cleanedText;
         }
       } catch (pdfError) {
         console.log('pdf-parse failed:', pdfError.message);
       }
 
-      // Method 3: Try OCR for scanned PDFs
+      // Method 2: Try OCR for scanned PDFs
       console.log('Attempting OCR extraction...');
       const ocrText = await this.extractWithOCR(filePath);
       if (ocrText && ocrText.trim().length > 50) {
@@ -70,9 +47,9 @@ class ResumeService {
         return this.cleanText(ocrText);
       }
 
-      throw new Error('Could not extract text from PDF');
+      throw new Error('Could not extract meaningful text from PDF');
     } catch (error) {
-      console.error('Resume extraction error:', error);
+      console.error('❌ Resume extraction error:', error);
       throw error;
     }
   }

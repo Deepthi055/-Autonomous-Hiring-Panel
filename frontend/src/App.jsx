@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MessageSquare } from 'lucide-react';
-import { ThemeProvider } from './ThemeContext';
+import { ThemeProvider, useTheme } from './ThemeContext';
+
 import Navigation from './components/Navigation';
 import Header from './components/Header';
 import WizardStepper from './components/WizardStepper';
@@ -13,88 +14,62 @@ import SummaryCard from './components/SummaryCard';
 import PerformanceChart from './components/PerformanceChart';
 import ResultsDashboard from './components/ResultsDashboard';
 import About from './components/About';
-import { useTheme } from './ThemeContext';
 
-// Mock data for demonstration without backend
+
+// ---------------- MOCK DATA ----------------
+
 const MOCK_EVALUATION_RESULT = {
   resume: {
-    score: 0.85,
+    score: 85,
     strengths: [
       'Strong experience in JavaScript and React',
-      'Clear career progression and achievements',
-      'AWS certifications documented',
-      'Leadership experience highlighted'
+      'Clear career progression and achievements'
     ],
-    concerns: [
-      'Some gaps in Python proficiency'
-    ],
-    gaps: [
-      'Limited DevOps experience',
-      'No mention of Docker expertise'
-    ],
+    concerns: ['Some gaps in Python proficiency'],
+    gaps: ['Limited DevOps experience'],
     contradictions: [],
   },
   technical: {
-    score: 0.78,
-    strengths: [
-      'Solid JavaScript and React knowledge',
-      'AWS certification matches job requirements',
-      'Full-stack development experience'
-    ],
-    concerns: [
-      'Python skills not deeply demonstrated',
-      'Limited cloud infrastructure examples'
-    ],
-    gaps: [
-      'Microservices architecture experience',
-      'Kubernetes knowledge'
-    ],
+    score: 78,
+    strengths: ['Solid React knowledge'],
+    concerns: ['Limited cloud examples'],
+    gaps: ['Microservices experience'],
     contradictions: [],
   },
   behavioral: {
-    score: 0.82,
-    strengths: [
-      'Clear team leadership experience',
-      'Communication skills evident',
-      'Collaboration demonstrated in projects',
-      'Mentoring of junior developers'
-    ],
-    concerns: [
-      'Limited conflict resolution examples'
-    ],
-    gaps: [
-      'Agile methodology not explicitly mentioned'
-    ],
+    score: 82,
+    strengths: ['Leadership experience'],
+    concerns: [],
+    gaps: ['Agile methodology not mentioned'],
     contradictions: [],
   },
   claims: {
-    score: 0.88,
-    strengths: [
-      'All certifications appear legitimate',
-      'Job titles match timeline',
-      'Verifiable achievements'
-    ],
+    score: 88,
+    strengths: ['Certifications appear valid'],
     concerns: [],
     gaps: [],
     contradictions: [],
   },
   consensus: {
-    finalScore: 0.83,
-    confidenceLevel: 0.82,
+    finalScore: 83,
+    confidenceLevel: 82,
     verdict: 'Hire',
-    summary: 'Strong candidate with excellent technical and behavioral fit for the role. Recommend moving to interview stage.',
+    summary:
+      'Strong candidate with excellent technical and behavioral fit.',
   },
 };
 
+
+// ---------------- APP CONTENT ----------------
+
 function AppContent({ onNavigateToAbout }) {
   const { isDark } = useTheme();
+
   const [currentStep, setCurrentStep] = useState(0);
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Wizard State
   const [jobData, setJobData] = useState({ role: '', description: '' });
   const [resumeData, setResumeData] = useState({ content: '', fileName: null });
   const [questions, setQuestions] = useState([]);
@@ -102,193 +77,133 @@ function AppContent({ onNavigateToAbout }) {
 
   const STEPS = ['Job Setup', 'Resume', 'AI Questions', 'Interview', 'Evaluation'];
 
-  const handleEvaluate = async (formData) => {
+  // ---------------- EVALUATION ----------------
+
+  const handleEvaluate = async () => {
     setLoading(true);
-    setError(null);
 
     try {
-      const response = await fetch('/api/evaluate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        // Fallback to mock data if backend is unavailable
-        console.warn('Backend unavailable, using mock data for demonstration');
+      // Simulate evaluation - show results after delay
+      setTimeout(() => {
         setResults(MOCK_EVALUATION_RESULT);
         setLoading(false);
-        return;
-        throw new Error(`Backend returned ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log("Backend response received:", data);
-      
-      // Transform backend response to component-friendly format
-      const transformedData = transformBackendResponse(data);
-      setResults(transformedData);
-    } catch (err) {
-      console.warn('Backend connection failed, loading mock data:', err.message);
-      // Fallback to mock data on network error
+      }, 1500);
+    } catch (error) {
+      console.error('Evaluation failed:', error);
       setResults(MOCK_EVALUATION_RESULT);
-      console.error('Evaluation failed:', err);
-      setError(err.message || 'Failed to connect to evaluation service');
-    } finally {
       setLoading(false);
     }
   };
 
-  const handleFinalSubmit = () => {
-    handleEvaluate({
-      resume: resumeData.content || "Mock Resume Content",
-      transcript: transcript,
-      jobDescription: jobData.description
-    });
+  const handleFinalSubmit = async () => {
     setCurrentStep(4);
+    await handleEvaluate();
   };
 
-  const handleLoadDemoData = () => {
-    setResults(MOCK_EVALUATION_RESULT);
-  };
-
-  const transformBackendResponse = (backendData) => {
-    // Extract agent outputs (handle both naming conventions from backend)
-    const agentOutputs = backendData.agentOutputs || backendData.rawAgentOutputs || [];
-    
-    // Helper to find agent by name (backend uses 'agentName', older versions might use 'agent')
-    const findAgent = (name) => agentOutputs.find(a => (a.agentName === name || a.agent === name)) || {};
-
-    const Resume = findAgent('ResumeAgent');
-    const Technical = findAgent('TechnicalAgent');
-    const Behavioral = findAgent('BehavioralAgent');
-    const Claims = findAgent('ClaimAgent');
-    
-    // Consensus data might be in 'consensus' or 'candidateAssessment'
-    const Consensus = backendData.consensus || backendData.candidateAssessment || {};
-
-    // Helper to normalize confidence level
-    const getConfidence = (val) => {
-      if (typeof val === 'number') return val;
-      if (val === 'high') return 0.9;
-      if (val === 'medium') return 0.7;
-      if (val === 'low') return 0.5;
-      return 0.75;
-    };
-
-    return {
-      resume: {
-        score: Resume.score || 0,
-        strengths: Resume.strengths || [],
-        concerns: Resume.concerns || [],
-        gaps: Resume.gaps || [],
-        contradictions: Resume.contradictions || [],
-      },
-      technical: {
-        score: Technical.score || 0,
-        strengths: Technical.strengths || [],
-        concerns: Technical.concerns || [],
-        gaps: Technical.gaps || [],
-        contradictions: Technical.contradictions || [],
-      },
-      behavioral: {
-        score: Behavioral.score || 0,
-        strengths: Behavioral.strengths || [],
-        concerns: Behavioral.concerns || [],
-        gaps: Behavioral.gaps || [],
-        contradictions: Behavioral.contradictions || [],
-      },
-      claims: {
-        score: Claims.score || 0,
-        strengths: Claims.strengths || [],
-        concerns: Claims.concerns || [],
-        gaps: Claims.gaps || [],
-        contradictions: Claims.contradictions || [],
-      },
-      consensus: {
-        finalScore: Consensus.finalScore || Consensus.score || 0,
-        confidenceLevel: getConfidence(Consensus.confidenceLevel),
-        verdict: Consensus.recommendation || Consensus.verdict || 'No Hire',
-        summary: Consensus.reasoning || Consensus.summary || 'Evaluation completed',
-      },
-    };
+  const resetApp = () => {
+    setCurrentStep(0);
+    setResults(null);
+    setJobData({ role: '', description: '' });
+    setResumeData({ content: '', fileName: null });
+    setQuestions([]);
+    setTranscript('');
   };
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${
+      isDark ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
+    }`}>
+
       <Navigation onAboutClick={onNavigateToAbout} />
       <Header />
-      
+
       <main className="max-w-5xl mx-auto px-4 py-8 pb-24">
         <div className="space-y-8">
-          
+
           <WizardStepper steps={STEPS} currentStep={currentStep} />
 
-          <div className={`rounded-2xl shadow-sm border p-6 min-h-[500px] transition-colors duration-300 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-            
+          <div className={`rounded-2xl shadow-md border p-8 min-h-[500px] transition ${
+            isDark
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white border-gray-200'
+          }`}>
+
+            {/* STEP 0 */}
             {currentStep === 0 && (
-              <JobSetup 
-                data={jobData} 
-                onUpdate={(updates) => setJobData({...jobData, ...updates})} 
-                onNext={() => setCurrentStep(1)} 
+              <JobSetup
+                data={jobData}
+                onUpdate={(updates) =>
+                  setJobData({ ...jobData, ...updates })
+                }
+                onNext={() => setCurrentStep(1)}
               />
             )}
 
+            {/* STEP 1 */}
             {currentStep === 1 && (
-              <ResumeInput 
-                data={resumeData} 
-                onUpdate={(updates) => setResumeData({...resumeData, ...updates})} 
-                onNext={() => setCurrentStep(2)} 
+              <ResumeInput
+                data={resumeData}
+                onUpdate={(updates) =>
+                  setResumeData({ ...resumeData, ...updates })
+                }
+                onNext={() => setCurrentStep(2)}
                 onBack={() => setCurrentStep(0)}
               />
             )}
 
+            {/* STEP 2 */}
             {currentStep === 2 && (
-              <QuestionGenerator 
-                data={{ questions, selectedRole: { id: jobData.role }, resumeContent: resumeData.content }}
+              <QuestionGenerator
+                data={{
+                  questions,
+                  selectedRole: { id: jobData.role },
+                  resumeContent: resumeData.content,
+                }}
                 onNext={(data) => {
-                   if(data && data.questions) setQuestions(data.questions);
-                   setCurrentStep(3);
-                }} 
+                  if (data?.questions) setQuestions(data.questions);
+                  setCurrentStep(3);
+                }}
                 onBack={() => setCurrentStep(1)}
               />
             )}
 
+            {/* STEP 3 */}
             {currentStep === 3 && (
-              <InterviewRecorder 
-                transcript={transcript} 
-                onUpdate={setTranscript} 
+              <InterviewRecorder
+                transcript={transcript}
+                onUpdate={setTranscript}
                 onNext={handleFinalSubmit}
                 onBack={() => setCurrentStep(2)}
               />
             )}
 
+            {/* STEP 4 */}
             {currentStep === 4 && (
               <div className="space-y-8 animate-fadeIn">
+
                 {loading && (
                   <div className="flex flex-col items-center justify-center h-64">
                     <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-lg font-semibold">Evaluating Candidate...</p>
+                    <p className="text-lg font-semibold">
+                      Evaluating Candidate...
+                    </p>
                   </div>
                 )}
 
                 {!loading && results && (
                   <>
                     <SummaryCard data={results} />
+
                     <div className="w-full">
                       <PerformanceChart data={results} />
                     </div>
-                    <ResultsDashboard data={(() => {
-                      const { consensus, ...agentResults } = results;
-                      return agentResults;
-                    })()} />
-                    
+
+                    <ResultsDashboard data={results} />
+
                     <div className="flex justify-center pt-8">
-                      <button 
-                        onClick={() => window.location.reload()}
-                        className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800 transition"
+                      <button
+                        onClick={resetApp}
+                        className="px-6 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                       >
                         Start New Evaluation
                       </button>
@@ -301,18 +216,20 @@ function AppContent({ onNavigateToAbout }) {
         </div>
       </main>
 
-      {/* Chatbot Trigger */}
+      {/* Chat Button */}
       <button
         onClick={() => setIsChatOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 z-40"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition hover:scale-105"
       >
         <MessageSquare size={24} />
       </button>
 
-      <Chatbot 
+      <Chatbot
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-        onAddQuestions={(q) => setQuestions(prev => [...prev, q])}
+        onAddQuestions={(q) =>
+          setQuestions((prev) => [...prev, q])
+        }
         currentQuestions={questions}
         role={jobData.role}
         resumeContent={resumeData.content}
@@ -321,23 +238,18 @@ function AppContent({ onNavigateToAbout }) {
   );
 }
 
+
+// ---------------- MAIN APP ----------------
+
 function App() {
   const [showAbout, setShowAbout] = useState(false);
-
-  const handleNavigateToAbout = () => {
-    setShowAbout(true);
-  };
-
-  const handleBackFromAbout = () => {
-    setShowAbout(false);
-  };
 
   return (
     <ThemeProvider>
       {showAbout ? (
-        <About onBack={handleBackFromAbout} />
+        <About onBack={() => setShowAbout(false)} />
       ) : (
-        <AppContent onNavigateToAbout={handleNavigateToAbout} />
+        <AppContent onNavigateToAbout={() => setShowAbout(true)} />
       )}
     </ThemeProvider>
   );

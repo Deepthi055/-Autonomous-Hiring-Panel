@@ -127,7 +127,7 @@ export default function EvaluationDashboard({ data }) {
   return (
     <div className="space-y-8 animate-fadeIn">
       <SummaryCard data={results} />
-      <div className="w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <PerformanceChart data={results} />
       </div>
       <ResultsDashboard data={(() => {

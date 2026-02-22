@@ -87,10 +87,10 @@ export default function PerformanceChart({ data }) {
 
   if (!data) return null;
 
-  // Normalize score safely (handles 0–1 OR 0–100)
+  // Scores are already in 0-100 format - just return as-is
   const normalizeScore = (val) => {
     if (!val) return 0;
-    return val <= 1 ? val * 100 : val;
+    return val > 100 ? val / 100 : val; // If somehow over 100, scale down; otherwise use as-is
   };
 
   const chartData = [

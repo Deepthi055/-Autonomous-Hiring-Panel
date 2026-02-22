@@ -13,10 +13,10 @@ export default function Header() {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-3 mb-3">
           <Sparkles size={36} className="animate-pulse" />
-          <h1 className="text-4xl md:text-5xl font-bold">AI Multi-Agent Candidate Evaluator</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">Verdict AI - Intelligent Hiring</h1>
         </div>
         <p className={`text-lg max-w-2xl mt-4 ${isDark ? 'text-gray-300' : 'text-indigo-100'}`}>
-          Intelligent evaluation system that combines multiple AI agents to assess candidates comprehensively across resume, technical skills, behavioral traits, and claim verification.
+          AI-powered candidate evaluation platform that provides objective, comprehensive assessments using advanced machine learning algorithms.
         </p>
       </div>
     </div>
