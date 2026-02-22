@@ -1,4 +1,4 @@
-Autonomous Hiring Panel - README
+
 Project Overview
 
 The Autonomous Hiring Panel is an AI-powered system designed to simulate a hiring committee for evaluating job candidates. Instead of relying on a single AI model, it uses multiple specialized agents to analyze resumes, interview transcripts, and job descriptions. The system provides detailed candidate assessments, highlights strengths and weaknesses, detects inconsistencies, and produces actionable hiring recommendations.
