@@ -10,7 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+<<<<<<< HEAD
     "jspdf": "^4.2.0",
+=======
+>>>>>>> af6bd1e1387df74987f7671216a47279d51a0c01
     "lucide-react": "^0.344.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -19,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@tailwindcss/postcss": "^4.2.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",

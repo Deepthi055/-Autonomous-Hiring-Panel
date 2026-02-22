@@ -28,7 +28,8 @@ function AgentCard({ agentKey, agentData }) {
   const Icon = agentIcons[agentKey];
   const label = agentLabels[agentKey];
   const score = agentData?.score || 0;
-  const scorePercentage = Math.round(score * 10);
+  // Handle both 0-1 and 0-100 score formats
+  const scorePercentage = Math.round(score > 1 ? score : score * 100);
   const strengths = agentData?.strengths || [];
   const concerns = agentData?.concerns || [];
   const gaps = agentData?.gaps || [];

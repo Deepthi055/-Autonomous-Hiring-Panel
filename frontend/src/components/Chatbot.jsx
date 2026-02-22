@@ -100,7 +100,7 @@ export default function Chatbot({ onAddQuestions, resumeContent, role }) {
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 flex justify-between items-center text-white">
             <div className="flex items-center gap-2">
               <Bot size={20} />
-              <span className="font-bold">DataVex Assistant</span>
+              <span className="font-bold">Verdict AI Assistant</span>
             </div>
             <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 rounded p-1"><X size={16} /></button>
           </div>

@@ -11,7 +11,7 @@ export default function Navigation({ onAboutClick }) {
         <div className="flex items-center gap-2">
           <BrainCircuit size={32} className="text-indigo-600" />
           <div className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            VerdictAI
+            Verdict AI
           </div>
         </div>
 

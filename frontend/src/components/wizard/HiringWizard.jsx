@@ -94,7 +94,7 @@ export default function HiringWizard() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center">
               <span className="text-white font-bold text-lg">V</span>
             </div>
-            <h1 className="text-xl font-bold text-gray-800">VerdictAI</h1>
+            <h1 className="text-xl font-bold text-gray-800">Verdict AI</h1>
           </div>
         </div>
       </div>

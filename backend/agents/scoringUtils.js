@@ -198,6 +198,7 @@ function findContradictions(sourceA, sourceB) {
 
 /**
  * Derives a recommendation label from a numeric score.
+ * Updated with stricter thresholds for DataVex quality standards.
  *
  * @param {number} score - Evaluation score (0–10)
  * @returns {string} Recommendation string
@@ -206,8 +207,9 @@ function scoreToRecommendation(score) {
   if (typeof score !== "number" || Number.isNaN(score)) {
     return "No Hire";
   }
-  if (score >= 8.0) return "Strong Hire";
-  if (score >= 6.5) return "Hire";
+  if (score >= 8.5) return "Strong Hire";
+  if (score >= 7.5) return "Hire";
+  if (score >= 6.0) return "Maybe";
   if (score >= 4.0) return "No Hire";
   return "Strong No Hire";
 }

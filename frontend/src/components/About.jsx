@@ -12,7 +12,7 @@ export default function About({ onBack }) {
           <div className="flex items-center gap-3">
             <Brain className="w-8 h-8 text-indigo-600" />
             <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              VerdictAI by DataVex
+              Verdict AI
             </h1>
           </div>
           <button
@@ -31,14 +31,14 @@ export default function About({ onBack }) {
 
 
       <main className="max-w-6xl mx-auto px-4 py-12 space-y-16">
-        {/* About DataVex */}
+        {/* About Verdict AI */}
         <section className="space-y-6">
           <div className="text-center space-y-4 mb-8">
             <h2 className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              About DataVex
+              About Verdict AI
             </h2>
             <p className={`text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'} max-w-3xl mx-auto`}>
-              DataVex is a visionary technology company specializing in AI, data science, cloud infrastructure, and digital transformation. We blend cutting-edge research with scalable product development to solve real-world industry challenges.
+              Verdict AI is an advanced hiring platform that leverages artificial intelligence to provide objective, comprehensive candidate evaluations. We revolutionize recruitment by eliminating bias and delivering data-driven hiring decisions.
             </p>
           </div>
 
@@ -47,7 +47,7 @@ export default function About({ onBack }) {
               Our Mission
             </h3>
             <p className={`${isDark ? 'text-gray-300' : 'text-gray-700'} text-lg`}>
-              To empower businesses to harness the power of data and intelligent systems, creating measurable impact and driving sustainable growth. We are strategically positioned to help organizations navigate the complexities of digital transformation.
+              To revolutionize hiring by providing AI-powered, objective candidate evaluation that removes bias and amplifies human decision-making. Verdict AI empowers recruiters and hiring managers to make better hiring decisions faster.
             </p>
           </div>
 
@@ -94,10 +94,10 @@ export default function About({ onBack }) {
         <section className="space-y-8">
           <div className="text-center space-y-4">
             <h2 className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              VerdictAI: Intelligent Candidate Evaluation
+              Verdict AI: The Future of Hiring
             </h2>
             <p className={`text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'} max-w-3xl mx-auto`}>
-              Our flagship AI-powered solution revolutionizes hiring by combining five specialized evaluation agents into one unified verdict. Using advanced LLMs, we provide comprehensive, objective candidate assessments that eliminate bias and deliver actionable insights.
+              Our flagship AI-powered platform revolutionizes recruitment by evaluating candidates across multiple dimensions. Using advanced machine learning, we provide comprehensive, objective assessments that eliminate bias and deliver confident hiring verdicts.
             </p>
           </div>
 
@@ -352,10 +352,10 @@ export default function About({ onBack }) {
           </div>
         </section>
 
-        {/* DataVex Services */}
+        {/* Verdict AI Services */}
         <section className="space-y-6">
           <h3 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            DataVex Core Services
+            Verdict AI Core Services
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className={`p-6 rounded-xl ${isDark ? 'bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border border-blue-700/50' : 'bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200'}`}>
@@ -446,10 +446,10 @@ export default function About({ onBack }) {
             VerdictAI - Intelligent Candidate Evaluation Platform
           </h4>
           <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Powered by DataVex's Advanced AI & Data Science Expertise
+            Powered by Advanced AI & Data Science Technology
           </p>
           <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-            © 2026 DataVex. All rights reserved. Transforming recruitment through intelligent automation.
+            © 2026 Verdict AI. All rights reserved. Transforming recruitment through intelligent automation.
           </p>
         </section>
       </main>

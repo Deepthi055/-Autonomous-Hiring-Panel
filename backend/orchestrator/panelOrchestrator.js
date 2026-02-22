@@ -8,9 +8,15 @@ const llmClient = require("../services/llmClient");
 
 async function runPanelEvaluation(inputData) {
   try {
-    console.log("Orchestration started");
+    console.log("============================================");
+    console.log("🚀 AgentsOrchestration started");
+    console.log("============================================");
 
     const { resume, transcript, jobDescription } = inputData;
+    
+    console.log(`📋 Resume length: ${resume?.length || 0} characters`);
+    console.log(`🎤 Transcript length: ${transcript?.length || 0} characters`);
+    console.log(`📝 Job description length: ${jobDescription?.length || 0} characters`);
 
     // 1. Initialize Agents
     const agents = [
@@ -47,6 +53,8 @@ async function runPanelEvaluation(inputData) {
           agentData.score = agentData.score > 1 ? agentData.score : agentData.score * 100;
         }
 
+        console.log(`✅ ${agentData.agentName}: Score = ${agentData.score.toFixed(1)}/100`);
+
         // Map agent names to keys
         const name = agentData.agentName || "";
         if (name.includes("Resume")) agentMap.resume = agentData;
@@ -56,7 +64,7 @@ async function runPanelEvaluation(inputData) {
         else if (name.includes("Skeptic")) agentMap.skeptic = agentData;
       } else {
         const reason = result.reason ? (result.reason.message || String(result.reason)) : "Unknown error";
-        console.error("Agent failed:", reason);
+        console.error("❌ Agent failed:", reason);
         failedAgents.push(reason);
       }
     });
@@ -87,13 +95,44 @@ async function runPanelEvaluation(inputData) {
       finalScore = Math.round(sum / validScores.length);
     }
 
-    // 5. Recommendation Logic: 3+ agents >= 60% → Hire
-    let highScoreCount = 0;
+    // 5. Improved Recommendation Logic with Multiple Criteria
+    // Count agents by score ranges
+    let excellentCount = 0; // >= 80
+    let goodCount = 0;      // >= 70
+    let passCount = 0;      // >= 60
+    let weakCount = 0;      // < 60
+    
     scoringKeys.forEach(key => {
-      if (agentScores[key] >= 60) highScoreCount++;
+      const score = agentScores[key];
+      if (score >= 80) excellentCount++;
+      if (score >= 70) goodCount++;
+      if (score >= 60) passCount++;
+      if (score < 60) weakCount++;
     });
 
-    const recommendation = highScoreCount >= 3 ? "Hire" : "No Hire";
+    // Decision Matrix based on comprehensive criteria
+    let recommendation;
+    let verdict;
+    
+    if (finalScore >= 85 && excellentCount >= 3) {
+      recommendation = "Strong Hire";
+      verdict = "Hire";
+    } else if (finalScore >= 75 && goodCount >= 3 && weakCount === 0) {
+      recommendation = "Hire";
+      verdict = "Hire";
+    } else if (finalScore >= 70 && goodCount >= 2 && excellentCount >= 1) {
+      recommendation = "Hire";
+      verdict = "Hire";
+    } else if (finalScore >= 60 && finalScore < 70) {
+      recommendation = "Maybe - Further Review Needed";
+      verdict = "Maybe";
+    } else if (finalScore >= 50 && finalScore < 60) {
+      recommendation = "No Hire - Below Expectations";
+      verdict = "No Hire";
+    } else {
+      recommendation = "Strong No Hire";
+      verdict = "No Hire";
+    }
 
     // 6. Confidence Level (percentage of valid agent scores)
     const confidenceLevel = Math.round((validScores.length / scoringKeys.length) * 100);
@@ -142,6 +181,14 @@ async function runPanelEvaluation(inputData) {
         summary: consensusData.summary
       }
     };
+
+    console.log("============================================");
+    console.log(`🎯 Final Score: ${finalScore}/100`);
+    console.log(`📊 Recommendation: ${recommendation}`);
+    console.log(`🔒 Confidence: ${confidenceLevel}%`);
+    console.log(`✅ Successful Agents: ${successfulAgents.length}`);
+    console.log(`❌ Failed Agents: ${failedAgents.length}`);
+    console.log("============================================");
 
     return response;
 
