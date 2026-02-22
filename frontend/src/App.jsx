@@ -11,7 +11,6 @@ import InterviewRecorder from './components/InterviewRecorder';
 import Chatbot from './components/Chatbot';
 import SummaryCard from './components/SummaryCard';
 import PerformanceChart from './components/PerformanceChart';
-import AgentBreakdownChart from './components/AgentBreakdownChart';
 import ResultsDashboard from './components/ResultsDashboard';
 import About from './components/About';
 import { useTheme } from './ThemeContext';
@@ -122,9 +121,11 @@ function AppContent({ onNavigateToAbout }) {
         setResults(MOCK_EVALUATION_RESULT);
         setLoading(false);
         return;
+        throw new Error(`Backend returned ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log("Backend response received:", data);
       
       // Transform backend response to component-friendly format
       const transformedData = transformBackendResponse(data);
@@ -133,6 +134,8 @@ function AppContent({ onNavigateToAbout }) {
       console.warn('Backend connection failed, loading mock data:', err.message);
       // Fallback to mock data on network error
       setResults(MOCK_EVALUATION_RESULT);
+      console.error('Evaluation failed:', err);
+      setError(err.message || 'Failed to connect to evaluation service');
     } finally {
       setLoading(false);
     }
@@ -152,54 +155,63 @@ function AppContent({ onNavigateToAbout }) {
   };
 
   const transformBackendResponse = (backendData) => {
-    // Extract agent outputs for detailed cards
-    const agentOutputs = backendData.rawAgentOutputs || [];
+    // Extract agent outputs (handle both naming conventions from backend)
+    const agentOutputs = backendData.agentOutputs || backendData.rawAgentOutputs || [];
     
-    // Map agent data
-    const Resume = agentOutputs.find(a => a.agent === 'ResumeAgent') || {};
-    const Technical = agentOutputs.find(a => a.agent === 'TechnicalAgent') || {};
-    const Behavioral = agentOutputs.find(a => a.agent === 'BehavioralAgent') || {};
-    const Claims = agentOutputs.find(a => a.agent === 'ClaimAgent') || {};
-    const Consensus = backendData.candidateAssessment || {};
+    // Helper to find agent by name (backend uses 'agentName', older versions might use 'agent')
+    const findAgent = (name) => agentOutputs.find(a => (a.agentName === name || a.agent === name)) || {};
+
+    const Resume = findAgent('ResumeAgent');
+    const Technical = findAgent('TechnicalAgent');
+    const Behavioral = findAgent('BehavioralAgent');
+    const Claims = findAgent('ClaimAgent');
+    
+    // Consensus data might be in 'consensus' or 'candidateAssessment'
+    const Consensus = backendData.consensus || backendData.candidateAssessment || {};
+
+    // Helper to normalize confidence level
+    const getConfidence = (val) => {
+      if (typeof val === 'number') return val;
+      if (val === 'high') return 0.9;
+      if (val === 'medium') return 0.7;
+      if (val === 'low') return 0.5;
+      return 0.75;
+    };
 
     return {
       resume: {
         score: Resume.score || 0,
-        strengths: Resume.strengths || [Resume.comments || 'Resume analysis completed'],
+        strengths: Resume.strengths || [],
         concerns: Resume.concerns || [],
         gaps: Resume.gaps || [],
         contradictions: Resume.contradictions || [],
       },
       technical: {
         score: Technical.score || 0,
-        strengths: Technical.strengths || [Technical.comments || 'Technical assessment completed'],
+        strengths: Technical.strengths || [],
         concerns: Technical.concerns || [],
         gaps: Technical.gaps || [],
         contradictions: Technical.contradictions || [],
       },
       behavioral: {
         score: Behavioral.score || 0,
-        strengths: Behavioral.strengths || [Behavioral.comments || 'Behavioral evaluation completed'],
+        strengths: Behavioral.strengths || [],
         concerns: Behavioral.concerns || [],
         gaps: Behavioral.gaps || [],
         contradictions: Behavioral.contradictions || [],
       },
       claims: {
         score: Claims.score || 0,
-        strengths: Claims.strengths || [Claims.comments || 'Claims verification completed'],
+        strengths: Claims.strengths || [],
         concerns: Claims.concerns || [],
         gaps: Claims.gaps || [],
         contradictions: Claims.contradictions || [],
       },
       consensus: {
-        finalScore: backendData.candidateAssessment?.consensus?.averageScore || 
-                   (agentOutputs.length > 0 
-                     ? agentOutputs.reduce((sum, a) => sum + (a.score || 0), 0) / agentOutputs.length 
-                     : 0),
-        confidenceLevel: backendData.candidateAssessment?.confidence || 
-                        (agentOutputs.length > 0 ? 0.75 : 0),
-        verdict: backendData.candidateAssessment?.verdict || 'No-Hire',
-        summary: backendData.candidateAssessment?.summary || 'Evaluation completed',
+        finalScore: Consensus.finalScore || Consensus.score || 0,
+        confidenceLevel: getConfidence(Consensus.confidenceLevel),
+        verdict: Consensus.recommendation || Consensus.verdict || 'No Hire',
+        summary: Consensus.reasoning || Consensus.summary || 'Evaluation completed',
       },
     };
   };
@@ -265,11 +277,13 @@ function AppContent({ onNavigateToAbout }) {
                 {!loading && results && (
                   <>
                     <SummaryCard data={results} />
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="w-full">
                       <PerformanceChart data={results} />
-                      <AgentBreakdownChart data={results} />
                     </div>
-                    <ResultsDashboard data={results} />
+                    <ResultsDashboard data={(() => {
+                      const { consensus, ...agentResults } = results;
+                      return agentResults;
+                    })()} />
                     
                     <div className="flex justify-center pt-8">
                       <button 

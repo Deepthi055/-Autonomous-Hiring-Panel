@@ -1,4 +1,4 @@
-import { Briefcase, Code, Database, Cpu, Server, ArrowRight, Check } from 'lucide-react';
+import { Briefcase, Code, Database, Cpu, Server, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useState } from 'react';
 
 const roles = [
@@ -86,7 +86,7 @@ Responsibilities:
 - Implement security best practices`,
 };
 
-export default function JobSetup({ onNext, data }) {
+export default function JobSetup({ onNext, onBack, data }) {
   const [jobDescription, setJobDescription] = useState(data?.jobDescription || '');
   const [selectedRole, setSelectedRole] = useState(data?.selectedRole || null);
   const [errors, setErrors] = useState({});
@@ -212,21 +212,32 @@ export default function JobSetup({ onNext, data }) {
         </div>
       </div>
 
-      {/* Continue Button */}
-      <div className="flex justify-end mt-8">
-        <button
-          onClick={handleContinue}
-          className="
-            flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 
-            hover:from-indigo-700 hover:to-purple-700 
-            text-white font-semibold py-3 px-8 rounded-xl
-            transition-all duration-200 shadow-lg shadow-indigo-200
-            hover:shadow-xl hover:scale-[1.02]
-          "
-        >
-          Continue to Resume
-          <ArrowRight size={20} />
-        </button>
+      {/* Navigation Buttons */}
+      <div className="flex justify-between mt-8">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200"
+          >
+            <ArrowLeft size={20} />
+            Back
+          </button>
+        )}
+        <div className={onBack ? 'ml-auto' : ''}>
+          <button
+            onClick={handleContinue}
+            className="
+              flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 
+              hover:from-indigo-700 hover:to-purple-700 
+              text-white font-semibold py-3 px-8 rounded-xl
+              transition-all duration-200 shadow-lg shadow-indigo-200
+              hover:shadow-xl hover:scale-[1.02]
+            "
+          >
+            Continue to Resume
+            <ArrowRight size={20} />
+          </button>
+        </div>
       </div>
     </div>
   );

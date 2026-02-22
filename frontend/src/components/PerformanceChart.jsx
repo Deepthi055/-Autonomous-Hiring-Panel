@@ -1,3 +1,75 @@
+// import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+// import { useTheme } from '../ThemeContext';
+
+// export default function PerformanceChart({ data }) {
+//   const { isDark } = useTheme();
+
+//   if (!data) return null;
+
+//   const chartData = [
+//     { name: 'Resume', score: (data.resume?.score || 0) * 100, fill: '#4f46e5' },
+//     { name: 'Technical', score: (data.technical?.score || 0) * 100, fill: '#0ea5e9' },
+//     { name: 'Behavioral', score: (data.behavioral?.score || 0) * 100, fill: '#8b5cf6' },
+//     { name: 'Claims', score: (data.claims?.score || 0) * 100, fill: '#ec4899' },
+//   ];
+
+//   return (
+//     <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-2xl shadow-lg p-6 border`}>
+//       <h3 className={`text-lg font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Agent Performance Breakdown</h3>
+      
+//       <div className="h-64 w-full">
+//         <ResponsiveContainer width="100%" height="100%">
+//           <BarChart
+//             data={chartData}
+//             layout="vertical"
+//             margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+//           >
+//             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={isDark ? '#374151' : '#e5e7eb'} />
+//             <XAxis 
+//               type="number" 
+//               domain={[0, 100]} 
+//               tick={{ fill: isDark ? '#9ca3af' : '#6b7280' }}
+//               stroke={isDark ? '#4b5563' : '#d1d5db'}
+//             />
+//             <YAxis 
+//               dataKey="name" 
+//               type="category" 
+//               tick={{ fill: isDark ? '#e5e7eb' : '#374151', fontWeight: 500 }}
+//               stroke={isDark ? '#4b5563' : '#d1d5db'}
+//               width={80}
+//             />
+//             <Tooltip 
+//               cursor={{ fill: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}
+//               contentStyle={{ 
+//                 backgroundColor: isDark ? '#1f2937' : '#fff',
+//                 borderColor: isDark ? '#374151' : '#e5e7eb',
+//                 color: isDark ? '#fff' : '#000',
+//                 borderRadius: '0.5rem'
+//               }}
+//             />
+//             <Bar dataKey="score" radius={[0, 4, 4, 0]} barSize={32}>
+//               {chartData.map((entry, index) => (
+//                 <Cell key={`cell-${index}`} fill={entry.fill} />
+//               ))}
+//             </Bar>
+//           </BarChart>
+//         </ResponsiveContainer>
+//       </div>
+
+//       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+//         {chartData.map((item) => (
+//           <div key={item.name} className="text-center">
+//             <div className="flex items-center justify-center gap-2 mb-1">
+//               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.fill }}></div>
+//               <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{item.name}</span>
+//             </div>
+//             <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{Math.round(item.score)}%</p>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// }
 import {
   BarChart,
   Bar,
@@ -5,9 +77,8 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
-  Cell,
+  Cell
 } from 'recharts';
 import { useTheme } from '../ThemeContext';
 
@@ -16,88 +87,127 @@ export default function PerformanceChart({ data }) {
 
   if (!data) return null;
 
-  const chartData = [
-    {
-      name: 'Resume Agent',
-      score: Math.round((data.resume?.score || 0) * 10),
-    },
-    {
-      name: 'Technical Agent',
-      score: Math.round((data.technical?.score || 0) * 10),
-    },
-    {
-      name: 'Behavioral Agent',
-      score: Math.round((data.behavioral?.score || 0) * 10),
-    },
-    {
-      name: 'Claims Agent',
-      score: Math.round((data.claims?.score || 0) * 10),
-    },
-  ];
-
-  const colors = ['#4f46e5', '#7c3aed', '#9333ea', '#a855f7'];
-
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className={`${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} p-3 rounded-lg shadow-lg border`}>
-          <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{payload[0].payload.name}</p>
-          <p className="text-lg font-bold text-indigo-600">{payload[0].value}%</p>
-        </div>
-      );
-    }
-    return null;
+  // Normalize score safely (handles 0–1 OR 0–100)
+  const normalizeScore = (val) => {
+    if (!val) return 0;
+    return val <= 1 ? val * 100 : val;
   };
 
-  return (
-    <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-lg p-8 border ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-      <h2 className={`text-2xl font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Agent Performance Breakdown</h2>
-      
-      <ResponsiveContainer width="100%" height={400}>
-        <BarChart
-          data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-        >
-          <CartesianGrid 
-            strokeDasharray="3 3" 
-            stroke={isDark ? '#4b5563' : '#e5e7eb'} 
-          />
-          <XAxis
-            dataKey="name"
-            tick={{ fill: isDark ? '#9ca3af' : '#6b7280', fontSize: 12 }}
-            axisLine={{ stroke: isDark ? '#4b5563' : '#e5e7eb' }}
-          />
-          <YAxis
-            domain={[0, 100]}
-            tick={{ fill: isDark ? '#9ca3af' : '#6b7280', fontSize: 12 }}
-            axisLine={{ stroke: isDark ? '#4b5563' : '#e5e7eb' }}
-            label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Bar
-            dataKey="score"
-            radius={[8, 8, 0, 0]}
-            animationDuration={1000}
-            animationEasing="ease-in-out"
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={colors[index]} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+  const chartData = [
+    {
+      name: 'Resume',
+      score: normalizeScore(data.resume?.score),
+      fill: '#4f46e5'
+    },
+    {
+      name: 'Technical',
+      score: normalizeScore(data.technical?.score),
+      fill: '#0ea5e9'
+    },
+    {
+      name: 'Behavioral',
+      score: normalizeScore(data.behavioral?.score),
+      fill: '#8b5cf6'
+    },
+    {
+      name: 'Claims',
+      score: normalizeScore(data.claims?.score),
+      fill: '#ec4899'
+    }
+  ];
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-        {chartData.map((item, index) => (
-          <div 
-            key={index} 
-            className={`rounded-lg p-4 border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}
+  return (
+    <div
+      className={`${
+        isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+      } rounded-2xl shadow-lg p-6 border`}
+    >
+      <h3
+        className={`text-lg font-bold mb-6 ${
+          isDark ? 'text-white' : 'text-gray-900'
+        }`}
+      >
+        Agent Performance Breakdown
+      </h3>
+
+      <div className="h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
           >
-            <p className={`text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              {item.name}
-            </p>
-            <p className="text-2xl font-bold mt-2" style={{ color: colors[index] }}>
-              {item.score}%
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={false}
+              stroke={isDark ? '#374151' : '#e5e7eb'}
+            />
+
+            <XAxis
+              type="number"
+              domain={[0, 100]}
+              tick={{ fill: isDark ? '#9ca3af' : '#6b7280' }}
+              stroke={isDark ? '#4b5563' : '#d1d5db'}
+            />
+
+            <YAxis
+              dataKey="name"
+              type="category"
+              tick={{
+                fill: isDark ? '#e5e7eb' : '#374151',
+                fontWeight: 500
+              }}
+              stroke={isDark ? '#4b5563' : '#d1d5db'}
+              width={100}
+            />
+
+            <Tooltip
+              formatter={(value) => `${Math.round(value)}%`}
+              cursor={{
+                fill: isDark
+                  ? 'rgba(255,255,255,0.05)'
+                  : 'rgba(0,0,0,0.05)'
+              }}
+              contentStyle={{
+                backgroundColor: isDark ? '#1f2937' : '#fff',
+                borderColor: isDark ? '#374151' : '#e5e7eb',
+                color: isDark ? '#fff' : '#000',
+                borderRadius: '0.5rem'
+              }}
+            />
+
+            <Bar dataKey="score" radius={[0, 6, 6, 0]} barSize={30}>
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Score Summary Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+        {chartData.map((item) => (
+          <div key={item.name} className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: item.fill }}
+              ></div>
+              <span
+                className={`text-xs font-medium ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}
+              >
+                {item.name}
+              </span>
+            </div>
+            <p
+              className={`text-xl font-bold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}
+            >
+              {Math.round(item.score)}%
             </p>
           </div>
         ))}

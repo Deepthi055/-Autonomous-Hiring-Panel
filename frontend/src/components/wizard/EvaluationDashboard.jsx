@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, TrendingDown, AlertTriangle, CheckCircle, XCircle, 
-  MessageSquare, RotateCcw, Award, Target, Brain, Shield
+  MessageSquare, RotateCcw, Award, Target, Brain, Shield, ArrowLeft, ArrowRight
 } from 'lucide-react';
 
 const COLORS = ['#4f46e5', '#8b5cf6', '#06b6d4', '#10b981'];
@@ -44,8 +44,52 @@ const generateMockEvaluation = (data) => {
   };
 };
 
-export default function EvaluationDashboard({ data, onRestart }) {
-  const [evaluation] = useState(generateMockEvaluation(data));
+export default function EvaluationDashboard({ data, onRestart, onBack }) {
+  const [evaluation, setEvaluation] = useState(() => generateMockEvaluation(data));
+  const [isReevaluating, setIsReevaluating] = useState(false);
+  
+  const handleReevaluate = () => {
+    setIsReevaluating(true);
+    // Simulate re-evaluation
+    setTimeout(() => {
+      setEvaluation(generateMockEvaluation(data));
+      setIsReevaluating(false);
+    }, 1500);
+  };
+
+  const handleGoBack = () => {
+    if (onBack) {
+      onBack();
+    }
+  };
+  
+  const handleGoToInterview = () => {
+    // Go to interview recording step (step 4)
+    if (onBack) {
+      onBack(4);
+    }
+  };
+  
+  const handleGoToQuestions = () => {
+    // Go to questions step (step 3)
+    if (onBack) {
+      onBack(3);
+    }
+  };
+  
+  const handleGoToResume = () => {
+    // Go to resume step (step 2)
+    if (onBack) {
+      onBack(2);
+    }
+  };
+  
+  const handleGoToJobSetup = () => {
+    // Go to job setup step (step 1)
+    if (onBack) {
+      onBack(1);
+    }
+  };
   
   const barData = [
     { name: 'Resume', score: evaluation.scores.resume * 100, fill: '#4f46e5' },
@@ -317,17 +361,59 @@ export default function EvaluationDashboard({ data, onRestart }) {
         </div>
       </div>
 
-      {/* Restart Button */}
-      <div className="flex justify-center">
+      {/* Quick Navigation to Previous Steps */}
+      <div className="bg-gray-50 rounded-xl p-4 mb-8">
+        <h4 className="font-semibold text-gray-700 mb-3">View Previous Steps</h4>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleGoToJobSetup}
+            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors"
+          >
+            Step 1: Job Setup
+          </button>
+          <button
+            onClick={handleGoToResume}
+            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors"
+          >
+            Step 2: Resume
+          </button>
+          <button
+            onClick={handleGoToQuestions}
+            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors"
+          >
+            Step 3: Questions
+          </button>
+          <button
+            onClick={handleGoToInterview}
+            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors"
+          >
+            Step 4: Interview Recording
+          </button>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-wrap justify-center gap-4">
+        <button
+          onClick={handleGoBack}
+          className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all duration-200"
+        >
+          <ArrowLeft size={20} />
+          Back to Interview
+        </button>
+        
+        <button
+          onClick={handleReevaluate}
+          disabled={isReevaluating}
+          className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-amber-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RotateCcw size={20} className={isReevaluating ? 'animate-spin' : ''} />
+          {isReevaluating ? 'Re-evaluating...' : 'Re-evaluate'}
+        </button>
+        
         <button
           onClick={onRestart}
-          className="
-            flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 
-            hover:from-indigo-700 hover:to-purple-700 
-            text-white font-semibold py-3 px-8 rounded-xl
-            transition-all duration-200 shadow-lg shadow-indigo-200
-            hover:shadow-xl hover:scale-[1.02]
-          "
+          className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-[1.02]"
         >
           <RotateCcw size={20} />
           Start New Evaluation

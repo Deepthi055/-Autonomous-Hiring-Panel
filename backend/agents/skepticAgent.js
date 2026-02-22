@@ -21,6 +21,29 @@ const FALLBACK_RESULT = {
   recommendation: "No Hire",
 };
 
+/**
+ * Safely converts a value to a number.
+ */
+function safeNumber(val, defaultVal = 0) {
+  const num = Number(val);
+  return isNaN(num) ? defaultVal : num;
+}
+
+/**
+ * Safely parses JSON from LLM response.
+ */
+function safeParseJSON(str) {
+  if (!str || typeof str !== 'string') return {};
+  let cleaned = str.replace(/```json/g, '').replace(/```/g, '');
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (match) cleaned = match[0];
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    return {};
+  }
+}
+
 class SkepticAgent {
   /**
    * @param {string} resume         - Candidate resume text
@@ -60,32 +83,14 @@ class SkepticAgent {
    * @returns {Object} Validated evaluation result
    */
   parseResponse(rawResponse) {
-    if (!rawResponse || typeof rawResponse !== "string") {
-      throw new Error("SkepticAgent received an empty or non-string response.");
-    }
-
-    let jsonString = rawResponse;
-    const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      jsonString = jsonMatch[0];
-    }
-
-    // Clean up common JSON errors from LLMs (e.g., trailing commas)
-    jsonString = jsonString
-      .replace(/,\s*(\]|\})/g, "$1")
-      .replace(/\n/g, " ")
-      .replace(/[\u0000-\u001F]+/g, "");
-
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonString);
-    } catch (err) {
-      throw new Error(`SkepticAgent failed to parse LLM response as JSON: ${err.message}`);
-    }
+    const parsed = safeParseJSON(rawResponse);
+    
+    // Ensure score is numeric, default to 5 (50%) if missing
+    const score = safeNumber(parsed.score, 5);
 
     return {
       agentName: this.agentName,
-      score: normalizeScore(parsed.score),
+      score: normalizeScore(score),
       contradictions: Array.isArray(parsed.contradictions) ? parsed.contradictions : [],
       overconfidenceFlags: Array.isArray(parsed.overconfidenceFlags)
         ? parsed.overconfidenceFlags
@@ -103,7 +108,7 @@ class SkepticAgent {
       concerns: Array.isArray(parsed.concerns) ? parsed.concerns : [],
       gaps: Array.isArray(parsed.gaps) ? parsed.gaps : [],
       reasoning: parsed.reasoning || "",
-      recommendation: parsed.recommendation || scoreToRecommendation(parsed.score),
+      recommendation: parsed.recommendation || scoreToRecommendation(score),
     };
   }
 

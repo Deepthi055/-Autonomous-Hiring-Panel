@@ -21,6 +21,29 @@ const FALLBACK_RESULT = {
   recommendation: "No Hire",
 };
 
+/**
+ * Safely converts a value to a number.
+ */
+function safeNumber(val, defaultVal = 0) {
+  const num = Number(val);
+  return isNaN(num) ? defaultVal : num;
+}
+
+/**
+ * Safely parses JSON from LLM response.
+ */
+function safeParseJSON(str) {
+  if (!str || typeof str !== 'string') return {};
+  let cleaned = str.replace(/```json/g, '').replace(/```/g, '');
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (match) cleaned = match[0];
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    return {};
+  }
+}
+
 class ResumeAgent {
   /**
    * @param {string} resume         - Candidate resume text
@@ -57,34 +80,13 @@ class ResumeAgent {
    * @returns {Object} Validated evaluation result
    */
   parseResponse(rawResponse) {
-    if (!rawResponse || typeof rawResponse !== "string") {
-      throw new Error("ResumeAgent received an empty or non-string response.");
-    }
-
-    let jsonString = rawResponse;
-    const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      jsonString = jsonMatch[0];
-    }
-
-    // Clean up common JSON errors from LLMs (e.g., trailing commas)
-    jsonString = jsonString
-      .replace(/,\s*(\]|\})/g, "$1")
-      .replace(/\n/g, " ")
-      .replace(/[\u0000-\u001F]+/g, "");
-
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonString);
-    } catch (err) {
-      throw new Error(`ResumeAgent failed to parse LLM response as JSON: ${err.message}`);
-    }
+    const parsed = safeParseJSON(rawResponse);
 
     return {
       agentName: this.agentName,
-      score: normalizeScore(parsed.score),
+      score: normalizeScore(safeNumber(parsed.score)),
       extractedSkills: parsed.extractedSkills || {},
-      skillAlignmentPercent: typeof parsed.skillAlignmentPercent === "number"
+      skillAlignmentPercent: typeof parsed.skillAlignmentPercent === "number" || typeof parsed.skillAlignmentPercent === "string"
         ? parsed.skillAlignmentPercent
         : 0,
       strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
