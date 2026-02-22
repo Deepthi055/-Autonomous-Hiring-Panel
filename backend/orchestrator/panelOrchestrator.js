@@ -49,8 +49,9 @@ async function runPanelEvaluation(inputData) {
         successfulAgents.push(agentData);
 
         // Normalize agent score to 0-100 scale (frontend expects percentage)
+        // Agents return scores on 0-10 scale, so multiply by 10 to get 0-100
         if (typeof agentData.score === 'number') {
-          agentData.score = agentData.score > 1 ? agentData.score : agentData.score * 100;
+          agentData.score = agentData.score <= 10 ? agentData.score * 10 : agentData.score;
         }
 
         console.log(`✅ ${agentData.agentName}: Score = ${agentData.score.toFixed(1)}/100`);
