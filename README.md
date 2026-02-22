@@ -1,80 +1,62 @@
-# Autonomous AI Hiring Panel > A Multi-Agent AI system that simulates a real-world technical hiring panel, evaluates candidate resumes and interviews, identifies gaps or contradictions, and autonomously produces hiring recommendations. --- ## Table of Contents 1. [System Overview](#system-overview) 2. [Agents Documentation](#agents-documentation) - [Resume Agent](#1-resume-agent-resumeagentjs) - [Technical Agent](#2-technical-agent-technicalagentjs) - [Behavioral Agent](#3-behavioral-agent-behavioralagentjs) - [Claim Agent](#4-claim-agent-claimagentjs) - [Skeptic Agent](#5-skeptic-agent-skepticagentjs) - [Consensus Agent](#6-consensus-agent-consensusagentjs) 3. [Orchestration Flow](#orchestration-flow-panelorchestratorjs) 4. [Data Flow Diagram](#data-flow-diagram) 5. [Frontend & Backend Workflow](#frontend--backend-workflow) 6. [API Endpoints](#api-endpoints) 7. [Technology Stack](#technology-stack) 8. [Getting Started](#getting-started) 9. [Usage](#usage) 10. [Contributing](#contributing) 11. [License](#license) 12. [Contact](#contact) --- ## System Overview The Autonomous Hiring Panel uses a **Multi-Agent System (MAS)** to evaluate candidates. Instead of relying on a single AI prompt, it orchestrates five specialized agents, each assuming a distinct persona and evaluation criteria. **Benefits:** - Reduces hallucinations - Provides multiple perspectives - Mimics a real-world hiring committee - Produces explainable decisions and audit trails --- ## Agents Documentation ### 1. Resume Agent (ResumeAgent.js) **Role:** The Screener **Input:** Resume text, Job Description (JD) **Output:** Skill alignment score, missing competencies, experience depth **Functionality:** - Parses resume for technical skills, tools, and certifications - Matches skills against JD requirements - Applies weighted scoring for critical skills (AI, Cloud, DevOps) - Performs gap analysis and lists missing skills **Key Metric:** skillAlignmentPercent --- ### 2. Technical Agent (TechnicalAgent.js) **Role:** Senior Engineer **Input:** Interview transcript, Resume, JD **Output:** Technical depth rating, system design score, vague answer flags **Functionality:** - Evaluates depth of technical answers - Assesses system design knowledge (scalability, microservices) - Detects vague or buzzword-heavy responses - Evaluates cloud/ML expertise **Key Metrics:** technicalDepth, systemDesignScore --- ### 3. Behavioral Agent (BehavioralAgent.js) **Role:** HR Manager / Culture Fit Evaluator **Input:** Interview transcript, Resume, JD **Output:** Leadership score, STAR adherence, cultural fit **Functionality:** - Checks STAR method adherence in behavioral answers - Evaluates leadership and ownership language - Quantifies impact with measurable outcomes - Assesses cultural alignment **Key Metrics:** culturalFitScore, starCompleteness --- ### 4. Claim Agent (ClaimAgent.js) **Role:** Background Checker / Fact Verifier **Input:** Resume, Interview Transcript **Output:** Credibility score, inflated claims, verified achievements **Functionality:** - Cross-references resume claims with interview answers - Flags discrepancies and unsupported achievements - Marks claims as "Verified" if details are consistent **Key Metric:** credibilityScore --- ### 5. Skeptic Agent (SkepticAgent.js) **Role:** Bar Raiser / Critical Evaluator **Input:** Resume, Interview Transcript **Output:** Contradictions, overconfidence flags, hiring risk **Functionality:** - Actively searches for reasons *not* to hire - Detects contradictions within transcript or between resume & transcript - Calculates buzzword-to-substance ratio - Assigns risk levels (Low / Medium / High / Critical) **Key Metrics:** hiringRisk, contradictions count --- ### 6. Consensus Agent (ConsensusAgent.js) **Role:** Committee Chair **Input:** Outputs from all agents **Output:** Final weighted score, hiring recommendation, confidence level **Functionality:** - Aggregates scores from all agents - Computes final weighted score - Recommends **Hire / Consider / No Hire** based on thresholds - Confidence based on number of agents successfully evaluating --- ## Orchestration Flow (panelOrchestrator.js) - Instantiates all 5 agents with Resume, Transcript, JD - Executes all agents in parallel (Promise.allSettled) - Normalizes agent scores to 0-100% - Applies voting logic for final verdict - Generates JSON report for frontend visualization **Scoring & Weights:** - Technical & Resume often carry higher influence - Skeptic agent can act as a veto mechanism - Final recommendation requires 3+ agents scoring >60% --- ## Data Flow Diagram
-mermaid
-graph TD
-    A[User Inputs] -->|Resume + Transcript + JD| B(Panel Orchestrator)
-    B --> C[Resume Agent]
-    B --> D[Technical Agent]
-    B --> E[Behavioral Agent]
-    B --> F[Claim Agent]
-    B --> G[Skeptic Agent]
-    
-    C -->|Score & Skills| H(Consensus Engine)
-    D -->|Score & Depth| H
-    E -->|Score & Culture| H
-    F -->|Score & Credibility| H
-    G -->|Score & Risks| H
-    
-    H --> I[Final Report JSON]
-    I --> J[Frontend Dashboard]
+Autonomous Hiring Panel - README
+Project Overview
 
-## 5. Frontend & Backend Workflow
+The Autonomous Hiring Panel is an AI-powered system designed to simulate a hiring committee for evaluating job candidates. Instead of relying on a single AI model, it uses multiple specialized agents to analyze resumes, interview transcripts, and job descriptions. The system provides detailed candidate assessments, highlights strengths and weaknesses, detects inconsistencies, and produces actionable hiring recommendations.
 
-The application follows a linear "Wizard" flow where data is accumulated at each step and sent to the backend for AI evaluation.
+System Architecture
+Audio Transcription Flow
 
-### Phase 1: Resume Ingestion
-- **Component:** `ResumeInput.jsx`
-- **Action:** User uploads a PDF or pastes text.
-- **Backend:** `POST /api/interview/upload-resume`
-- **Result:** Text is extracted and stored in the frontend state (`resumeContent`).
+The system captures a candidate’s spoken interview responses and converts them into text. On the frontend, the InterviewRecorder component uses the browser’s MediaRecorder API to record audio. Audio is collected in chunks and combined into a single audio file when recording stops. This audio file is then uploaded to the backend.
 
-### Phase 2: Question Generation
-- **Component:** `QuestionGenerator.jsx`
-- **Action:** Frontend sends the `resumeContent` and selected `role`.
-- **Backend:** `POST /api/interview/generate-questions`
-- **Logic:** LLM generates technical and behavioral questions based on resume gaps and role requirements.
-- **Result:** A list of questions is displayed to the user.
+On the backend, the file is received via middleware such as multer. A speech service, typically OpenAI Whisper, processes the audio file and returns a textual transcript. The frontend receives this transcript in JSON format and displays it in the interface for the candidate’s answers.
 
-### Phase 3: Interview & Transcription
-- **Component:** `InterviewRecorder.jsx`
-- **Action:** User records answers to the generated questions.
-- **Backend:** `POST /api/interview/transcribe`
-- **Logic:** Audio is converted to text using an AI transcription service.
-- **Result:** Transcript is appended to the interview record.
+Frontend-to-Backend Workflow
 
-### Phase 4: AI Evaluation
-- **Component:** `HiringWizard.jsx` (Submit Step)
-- **Action:** Frontend sends the accumulated `resumeContent`, `transcript`, and `jobDescription`.
-- **Backend:** `POST /api/interview/evaluate`
-- **Logic:** `panelOrchestrator` spins up 5 AI agents (Resume, Technical, Behavioral, Claim, Skeptic) to analyze the data in parallel.
-- **Result:** JSON report containing scores, flags, and a hiring recommendation.
+The application follows a linear wizard-like workflow, accumulating data at each step:
 
-### Phase 5: Visualization
-- **Component:** `ResultsDashboard.jsx`
-- **Action:** Renders the JSON response into charts (`PerformanceChart.jsx`) and detailed cards.
+Resume Ingestion: The user uploads a resume PDF or pastes text in the ResumeInput component. The backend extracts the text and makes it available in the frontend state for further processing.
 
----
+Question Generation: Using the QuestionGenerator component, the frontend sends the resume text and the selected job role to the backend. A language model generates technical and behavioral questions tailored to the candidate’s experience and the job requirements. These questions are then displayed in the frontend.
 
-## 6. API Endpoints
+Interview Recording: The candidate records answers to the generated questions in the InterviewRecorder component. Audio is uploaded and transcribed into text, which is appended to the candidate’s interview record.
 
-| Endpoint | Method | Input | Output |
-| --- | --- | --- | --- |
-| `/api/interview/upload-resume` | POST | `file` (PDF) | `{ resumeText: string }` |
-| `/api/interview/generate-questions` | POST | `{ role, resumeText }` | `{ questions: [] }` |
-| `/api/interview/transcribe` | POST | `file` (Audio) | `{ transcript: string }` |
-| `/api/interview/chatbot` | POST | `{ prompt, context }` | `{ response: string }` |
-| `/api/interview/evaluate` | POST | `{ resume, transcript, jd }` | `{ candidateAssessment, rawAgentOutputs }` |
+AI Evaluation: When all answers are recorded, the HiringWizard component submits the resume, interview transcript, and job description to the backend. The system orchestrates multiple AI agents to analyze the information in parallel and produce a structured evaluation.
 
----
+Results Visualization: The ResultsDashboard component renders the evaluation results. It presents scores, risk flags, and recommendations through readable cards and charts, allowing the hiring panel or recruiter to make informed decisions.
 
-## 7. Technology Stack
+Key Technologies
 
-- **Frontend:** React, Vite, TailwindCSS, Recharts, Lucide Icons  
-- **Backend:** Node.js, Express  
-- **AI Services:** OpenAI GPT / OpenRouter (Agents & Question Gen), Whisper (Transcription)  
-- **Database:** MongoDB / PostgreSQL  
-- **State Management:** React `useState` passed through Wizard steps  
+The frontend is built using React with Vite, styled using Tailwind CSS, and uses Lucide Icons for visual elements. Charts are displayed using Recharts. State management is handled via React’s useState, propagated through the wizard steps.
 
----
+The backend uses Node.js and Express. AI services include OpenRouter or OpenAI models for language tasks and OpenAI Whisper for speech-to-text transcription. The system is designed to be modular and extensible, allowing the integration of additional agents or AI services as needed.
 
-## 8. Getting Started
-bash # Clone repository git clone https://github.com/<your-username>/sample.git cd sample # Install frontend cd frontend npm install # Install backend cd ../backend npm install # Start backend npm run dev # Start frontend cd ../frontend npm run dev
+Agent Architecture
+
+The evaluation process relies on a multi-agent system, where each agent plays a distinct role:
+
+Resume Agent: Acts as the screener. It parses the resume to identify skills, certifications, and experience, and compares them with the job description. It produces a skill alignment score and identifies missing competencies.
+
+Technical Agent: Acts as a senior engineer. It evaluates the technical depth of the candidate’s answers, system design understanding, and penalizes vague responses. It also assesses cloud and AI expertise when relevant.
+
+Behavioral Agent: Functions as the HR or culture evaluator. It analyzes responses using the STAR (Situation, Task, Action, Result) framework, evaluates leadership and ownership, and assesses cultural fit.
+
+Claim Agent: Functions as a fact checker. It cross-references resume claims with interview responses, identifies inflated or unsupported claims, and assigns a credibility score.
+
+Skeptic Agent: Acts as a bar raiser, actively looking for reasons not to hire. It detects contradictions, overconfidence, and assesses risk.
+
+Consensus Agent: Acts as the committee chair. It aggregates outputs from all other agents, calculates a final weighted score, and generates the hiring recommendation along with a confidence level.
+
+Orchestration Flow
+
+The orchestration component, often referred to as the PanelOrchestrator, manages the evaluation process. It instantiates all five agents with the candidate’s resume, transcript, and job description. Agents run in parallel so that failure of one does not affect the others. The orchestrator normalizes all scores to a standardized scale, applies voting logic, and determines the final recommendation. The system returns a structured JSON report containing individual agent outputs, the consensus summary, and the final decision.
+
+Usage Instructions
+
+Install dependencies by running npm install in the project root.
+
+Start the backend server using npm run dev.
+
+Start the frontend server using npm run dev --prefix frontend.
+
+Use the application by following the workflow: upload a resume, generate interview questions, record answers, submit for AI evaluation, and view the results on the dashboard.
+
