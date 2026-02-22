@@ -9,7 +9,7 @@ import JobSetup from './components/JobSetup';
 import ResumeInput from './components/ResumeInput';
 import QuestionGenerator from './components/QuestionGenerator';
 import InterviewRecorder from './components/InterviewRecorder';
-import Chatbot from './components/Chatbot';
+import Chatbot from './components/ui/Chatbot';
 import SummaryCard from './components/SummaryCard';
 import PerformanceChart from './components/PerformanceChart';
 import ResultsDashboard from './components/ResultsDashboard';
@@ -164,7 +164,6 @@ function AppContent({ onNavigateToAbout }) {
         setResults(MOCK_EVALUATION_RESULT);
         setLoading(false);
         return;
-        throw new Error(`Backend returned ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
