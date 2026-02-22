@@ -11,6 +11,11 @@ class SpeechService {
   constructor() {
     this.openRouterBaseUrl = 'https://openrouter.ai/api/v1';
     this.whisperModel = 'openai/whisper-1'; // OpenRouter model name for Whisper
+
+    // Log warning on startup if key is missing
+    if (!this.isConfigured()) {
+      console.warn('⚠️ SpeechService: OPENROUTER_API_KEY is not configured. Transcription will use placeholders.');
+    }
   }
 
   /**
@@ -50,8 +55,9 @@ class SpeechService {
       return transcript;
     } catch (error) {
       console.error('❌ OpenRouter transcription failed:', error.response?.data || error.message);
-      console.warn('⚠️ Falling back to placeholder transcript.');
-      return this.getPlaceholderTranscript();
+      
+      // Return a clear message so the user knows to type manually
+      return `[System Error: Transcription failed (${error.response?.status || 'Unknown'}). Please type or paste the candidate's response here.]`;
     }
   }
 
@@ -109,7 +115,7 @@ class SpeechService {
    * Get placeholder transcript for demo purposes
    */
   getPlaceholderTranscript() {
-    return `(Placeholder) Transcription service is currently unavailable. Please configure OPENROUTER_API_KEY in your .env file.`;
+    return `[System: Transcription unavailable (API Key missing). Please type or paste the interview response here.]`;
   }
 }
 

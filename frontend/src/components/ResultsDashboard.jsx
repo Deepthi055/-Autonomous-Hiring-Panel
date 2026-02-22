@@ -139,15 +139,17 @@ export default function ResultsDashboard({ data }) {
     { key: 'technical', data: data.technical },
     { key: 'behavioral', data: data.behavioral },
     { key: 'claims', data: data.claims },
-    { key: 'consensus', data: data.consensus },
   ];
+
+  // Filter out agents with no data (this handles the case where consensus is undefined)
+  const visibleAgents = agents.filter(agent => agent.data);
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className={`text-2xl font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Detailed Agent Analysis</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {agents.map((agent) => (
+          {visibleAgents.map((agent) => (
             <AgentCard key={agent.key} agentKey={agent.key} agentData={agent.data} />
           ))}
         </div>

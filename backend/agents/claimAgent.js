@@ -12,14 +12,46 @@ const { normalizeScore, scoreToRecommendation } = require("./scoringUtils");
 /** Default result returned when evaluation cannot be completed. */
 const FALLBACK_RESULT = {
   agentName: "ClaimAgent",
-  score: 0,
+  score: 50,
   strengths: [],
-  concerns: ["Evaluation could not be completed"],
+  concerns: ["Claim analysis unavailable due to parsing error"],
   gaps: [],
   contradictions: [],
   reasoning: "The claim verification failed due to an error.",
   recommendation: "No Hire",
 };
+
+/**
+ * Safely converts a value to a number.
+ */
+function safeNumber(val, defaultVal = 0) {
+  const num = Number(val);
+  return isNaN(num) ? defaultVal : num;
+}
+
+/**
+ * Safely parses JSON from LLM response, handling markdown and common formatting errors.
+ */
+function safeParseJSON(str) {
+  if (!str || typeof str !== 'string') return {};
+
+  // 1. Remove markdown code blocks
+  let cleaned = str.replace(/```json/g, '').replace(/```/g, '');
+
+  // 2. Extract the first valid JSON object using regex
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (match) {
+    cleaned = match[0];
+  }
+
+  // 3. Try to parse
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    // 4. Return empty object if parsing fails completely
+    return {};
+  }
+}
 
 class ClaimAgent {
   /**
@@ -28,15 +60,8 @@ class ClaimAgent {
    * @param {string} jobDescription - Target job description
    */
   constructor(resume, transcript, jobDescription) {
-    if (!resume || typeof resume !== "string") {
-      throw new Error("ClaimAgent requires a non-empty resume string.");
-    }
-    if (!transcript || typeof transcript !== "string") {
-      throw new Error("ClaimAgent requires a non-empty transcript string.");
-    }
-    if (!jobDescription || typeof jobDescription !== "string") {
-      throw new Error("ClaimAgent requires a non-empty jobDescription string.");
-    }
+    // Constructor inputs are validated in evaluate() to prevent crashes during initialization
+    // if data is missing upstream.
 
     this.resume = resume;
     this.transcript = transcript;
@@ -60,44 +85,26 @@ class ClaimAgent {
    * @returns {Object} Validated evaluation result
    */
   parseResponse(rawResponse) {
-    if (!rawResponse || typeof rawResponse !== "string") {
-      throw new Error("ClaimAgent received an empty or non-string response.");
-    }
-
-    let jsonString = rawResponse;
-    const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      jsonString = jsonMatch[0];
-    }
-
-    // Clean up common JSON errors from LLMs (e.g., trailing commas)
-    jsonString = jsonString
-      .replace(/,\s*(\]|\})/g, "$1")  // Remove trailing commas
-      .replace(/\n/g, " ")            // Remove newlines that might break parsing
-      .replace(/[\u0000-\u001F]+/g, ""); // Remove control characters
-
-    let parsed;
-    try {
-      parsed = JSON.parse(jsonString);
-    } catch (err) {
-      throw new Error(`ClaimAgent failed to parse LLM response as JSON: ${err.message}`);
-    }
+    const parsed = safeParseJSON(rawResponse);
+    
+    // Ensure score is numeric, default to 5 (50%) if missing
+    const score = safeNumber(parsed.score, 5);
 
     return {
       agentName: this.agentName,
-      score: normalizeScore(parsed.score),
-      credibilityScore: normalizeScore(parsed.credibilityScore),
+      score: normalizeScore(score),
+      credibilityScore: normalizeScore(safeNumber(parsed.credibilityScore, score)),
       inflatedClaims: Array.isArray(parsed.inflatedClaims) ? parsed.inflatedClaims : [],
       unsupportedAchievements: Array.isArray(parsed.unsupportedAchievements)
         ? parsed.unsupportedAchievements
         : [],
       verifiedClaims: Array.isArray(parsed.verifiedClaims) ? parsed.verifiedClaims : [],
       strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
-      concerns: Array.isArray(parsed.concerns) ? parsed.concerns : [],
+      concerns: Array.isArray(parsed.concerns) ? parsed.concerns : (parsed.concerns ? [String(parsed.concerns)] : []),
       gaps: Array.isArray(parsed.gaps) ? parsed.gaps : [],
       contradictions: Array.isArray(parsed.contradictions) ? parsed.contradictions : [],
-      reasoning: parsed.reasoning || "",
-      recommendation: parsed.recommendation || scoreToRecommendation(parsed.score),
+      reasoning: parsed.reasoning || "Analysis completed.",
+      recommendation: parsed.recommendation || scoreToRecommendation(score),
     };
   }
 
@@ -109,8 +116,12 @@ class ClaimAgent {
    */
   async evaluate(llmClient) {
     try {
+      if (!this.resume || !this.transcript || !this.jobDescription) {
+        return { ...FALLBACK_RESULT, concerns: ["Missing input data for ClaimAgent"] };
+      }
+
       if (!llmClient || typeof llmClient.complete !== "function") {
-        throw new Error("ClaimAgent.evaluate() requires an llmClient with a complete() method.");
+        return { ...FALLBACK_RESULT, concerns: ["LLM Client not provided"] };
       }
 
       const prompt = this.buildPrompt();

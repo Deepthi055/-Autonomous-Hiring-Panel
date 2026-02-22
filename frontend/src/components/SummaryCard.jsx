@@ -1,111 +1,101 @@
-import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from 'recharts';
-import { useTheme } from '../ThemeContext';
+import { useEffect, useState } from "react";
 
 export default function SummaryCard({ data }) {
-  const { isDark } = useTheme();
+  if (!data || !data.consensus) return null;
 
-  if (!data) return null;
+  const { finalScore, confidenceLevel, verdict, summary } = data.consensus;
 
-  const finalScore = data.consensus?.finalScore || 0;
-  const confidenceLevel = data.consensus?.confidenceLevel || 0;
-  const scorePercentage = Math.round(finalScore * 10);
+  // Normalize safely
+  const normalize = (val) => {
+    if (val === undefined || val === null) return null;
+    return val <= 1 ? Math.round(val * 100) : Math.round(val);
+  };
 
-  const chartData = [
-    {
-      name: 'Score',
-      value: scorePercentage,
-      fill: '#4f46e5',
-    },
-  ];
+  const score = normalize(finalScore);
+  const confidence = normalize(confidenceLevel);
 
-  let recommendation = 'No Hire';
-  let badgeColor = isDark
-    ? 'bg-red-900 text-red-200 border-red-700'
-    : 'bg-red-100 text-red-800 border-red-300';
+  // 🔥 Safe Prediction Logic
+  let prediction = "No Hire";
 
-  if (scorePercentage >= 70) {
-    recommendation = 'Hire';
-    badgeColor = isDark
-      ? 'bg-green-900 text-green-200 border-green-700'
-      : 'bg-green-100 text-green-800 border-green-300';
-  } else if (scorePercentage >= 50) {
-    recommendation = 'Borderline';
-    badgeColor = isDark
-      ? 'bg-yellow-900 text-yellow-200 border-yellow-700'
-      : 'bg-yellow-100 text-yellow-800 border-yellow-300';
+  if (score !== null) {
+    prediction = score >= 70 ? "Hire" : "No Hire";
+  } else if (verdict) {
+    const lower = verdict.toLowerCase().trim();
+    if (lower === "hire") prediction = "Hire";
+    if (lower === "no hire") prediction = "No Hire";
   }
 
+  const isHire = prediction === "Hire";
+
+  // Animated score (only if score exists)
+  const [animatedScore, setAnimatedScore] = useState(0);
+
+  useEffect(() => {
+    if (score === null) return;
+
+    let start = 0;
+    const duration = 800;
+    const increment = score / (duration / 16);
+
+    const animate = () => {
+      start += increment;
+      if (start < score) {
+        setAnimatedScore(Math.floor(start));
+        requestAnimationFrame(animate);
+      } else {
+        setAnimatedScore(score);
+      }
+    };
+
+    animate();
+  }, [score]);
+
   return (
-    <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-lg p-8 border ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-      <h2 className={`text-2xl font-bold mb-8 ${isDark ? 'text-white' : 'text-gray-900'}`}>Evaluation Summary</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Score Circle */}
-        <div className="flex flex-col items-center justify-center">
-          <div className="w-48 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadialBarChart
-                cx="50%"
-                cy="50%"
-                innerRadius="60%"
-                outerRadius="100%"
-                data={chartData}
-                startAngle={90}
-                endAngle={450}
-              >
-                <PolarAngleAxis
-                  type="number"
-                  domain={[0, 100]}
-                  angleAxisId={0}
-                  tick={false}
-                />
-                <RadialBar
-                  background
-                  dataKey="value"
-                  cornerRadius={8}
-                  tick={false}
-                  fill="#4f46e5"
-                />
-              </RadialBarChart>
-            </ResponsiveContainer>
-          </div>
-          <p className="text-5xl font-bold text-indigo-600 mt-2">{scorePercentage}%</p>
-          <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Final Score</p>
+    <div className="rounded-3xl p-10 bg-white dark:bg-gray-800 shadow-xl border border-gray-200 dark:border-gray-700 transition-all duration-300">
+
+      <h2 className="text-2xl font-bold mb-8 text-center bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+        AI Hiring Prediction
+      </h2>
+
+      <div className="flex flex-col items-center justify-center">
+
+        {/* Prediction Badge */}
+        <div
+          className={`px-8 py-3 rounded-full text-white text-lg font-semibold shadow-lg transition-all duration-500 ${
+            isHire
+              ? "bg-green-500 shadow-green-500/50"
+              : "bg-red-500 shadow-red-500/50"
+          }`}
+        >
+          {prediction}
         </div>
 
-        {/* Recommendation & Details */}
-        <div className="md:col-span-2 flex flex-col justify-center gap-6">
-          <div>
-            <p className={`text-sm mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Recommendation</p>
-            <div className={`inline-block px-4 py-2 rounded-full font-semibold border-2 ${badgeColor}`}>
-              {recommendation}
-            </div>
+        {/* Score */}
+        {score !== null && (
+          <div className="mt-6 text-center">
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
+              Overall Score
+            </p>
+            <p className="text-4xl font-bold text-gray-900 dark:text-white">
+              {animatedScore}%
+            </p>
           </div>
+        )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className={`rounded-xl p-4 border ${
-              isDark
-                ? 'bg-gradient-to-br from-indigo-900 to-indigo-800 border-indigo-700'
-                : 'bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200'
-            }`}>
-              <p className={`text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-indigo-300' : 'text-gray-600'}`}>Confidence Level</p>
-              <p className="text-3xl font-bold text-indigo-600 mt-1">{Math.round(confidenceLevel * 100)}%</p>
-            </div>
+        {/* Confidence */}
+        {confidence !== null && (
+          <p className="mt-4 text-gray-600 dark:text-gray-400">
+            Confidence: <span className="font-semibold">{confidence}%</span>
+          </p>
+        )}
 
-            <div className={`rounded-xl p-4 border ${
-              isDark
-                ? 'bg-gradient-to-br from-purple-900 to-purple-800 border-purple-700'
-                : 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200'
-            }`}>
-              <p className={`text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-purple-300' : 'text-gray-600'}`}>Overall Rating</p>
-              <p className="text-3xl font-bold text-purple-600 mt-1">{scorePercentage}%</p>
-            </div>
-          </div>
-
-          <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            {data.consensus?.summary || 'This score represents a comprehensive evaluation by multiple AI agents analyzing the candidate\'s resume, technical skills, behavioral fit, and claim verification.'}
+        {/* Summary */}
+        <div className="mt-8 max-w-2xl text-center">
+          <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+            {summary || "Evaluation completed."}
           </p>
         </div>
+
       </div>
     </div>
   );

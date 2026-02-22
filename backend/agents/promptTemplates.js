@@ -23,7 +23,15 @@ Evaluation Principles:
 - Penalize vague, buzzword-heavy, or unsubstantiated claims
 - Consider enterprise-level technical depth and production-grade experience
 
-Always respond with valid JSON only. No markdown, no code fences, no extra text.`;
+STRICT JSON OUTPUT RULES:
+1. Output MUST be valid, parseable JSON.
+2. Do NOT use markdown code blocks (e.g., \`\`\`json).
+3. Do NOT include any text outside the JSON object.
+4. Ensure all array elements are separated by commas.
+5. Ensure no trailing commas in arrays or objects.
+6. Escape all double quotes within string values.
+7. The response must start immediately with { and end with }.
+8. Do not truncate arrays or strings.`;
 }
 
 /**
@@ -72,7 +80,8 @@ Respond with this exact JSON structure:
   "contradictions": [],
   "reasoning": "<2-3 sentence justification>",
   "recommendation": "<Strong Hire | Hire | No Hire | Strong No Hire>"
-}`;
+}
+Ensure the response is valid JSON with no markdown.`;
 }
 
 /**
@@ -119,7 +128,8 @@ Respond with this exact JSON structure:
   "contradictions": [],
   "reasoning": "<2-3 sentence justification>",
   "recommendation": "<Strong Hire | Hire | No Hire | Strong No Hire>"
-}`;
+}
+Ensure the response is valid JSON with no markdown.`;
 }
 
 /**
@@ -165,7 +175,8 @@ Respond with this exact JSON structure:
   "contradictions": [],
   "reasoning": "<2-3 sentence justification>",
   "recommendation": "<Strong Hire | Hire | No Hire | Strong No Hire>"
-}`;
+}
+Ensure the response is valid JSON with no markdown.`;
 }
 
 /**
@@ -212,7 +223,8 @@ Respond with this exact JSON structure:
   "contradictions": ["<specific resume vs transcript contradiction>"],
   "reasoning": "<2-3 sentence justification>",
   "recommendation": "<Strong Hire | Hire | No Hire | Strong No Hire>"
-}`;
+}
+Ensure the response is valid JSON with no markdown.`;
 }
 
 /**
@@ -265,7 +277,8 @@ Respond with this exact JSON structure:
   "gaps": ["<knowledge or experience gap>"],
   "reasoning": "<2-3 sentence justification>",
   "recommendation": "<Strong Hire | Hire | No Hire | Strong No Hire>"
-}`;
+}
+Ensure the response is valid JSON with no markdown.`;
 }
 
 /**
@@ -334,7 +347,8 @@ Respond with this exact JSON structure:
   "recommendation": "<Strong Hire | Hire | No Hire | Strong No Hire>",
   "finalRecommendation": "<Strong Hire | Hire | No Hire | Strong No Hire>",
   "confidenceLevel": "<high | medium | low>"
-}`;
+}
+Ensure the response is valid JSON with no markdown.`;
 }
 
 module.exports = {

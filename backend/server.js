@@ -1,5 +1,16 @@
-const express = require("express");
 const path = require("path");
+// Explicitly load .env from the backend directory to avoid path issues
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+
+// Debugging: Verify API Keys are loaded
+console.log("------------------------------------------------");
+console.log("Server Starting...");
+console.log("Loading .env from:", path.resolve(__dirname, '.env'));
+console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "✅ Loaded" : "❌ Not Found");
+console.log("OPENROUTER_API_KEY:", process.env.OPENROUTER_API_KEY ? "✅ Loaded" : "❌ Not Found");
+console.log("------------------------------------------------");
+
+const express = require("express");
 const fs = require("fs");
 const evaluationRoutes = require("./routes/evaluationRoutes");
 const interviewRoutes = require("./routes/interviewRoutes");

@@ -11,9 +11,6 @@ import { useTheme } from "../ThemeContext";
 export default function InterviewRecorder({ transcript, onUpdate, onNext }) {
   const { isDark } = useTheme();
 
-  /* ================= MODE TOGGLE ================= */
-  const [mode, setMode] = useState("record"); // "record" or "paste"
-
   /* ================= RECORD STATES ================= */
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -145,34 +142,9 @@ export default function InterviewRecorder({ transcript, onUpdate, onNext }) {
   return (
     <div className="space-y-8">
 
-      {/* MODE TOGGLE */}
-      <div className="flex justify-center gap-4">
-        <button
-          onClick={() => setMode("record")}
-          className={`px-6 py-2 rounded-lg ${
-            mode === "record"
-              ? "bg-indigo-600 text-white"
-              : "bg-gray-200"
-          }`}
-        >
-          Record Audio
-        </button>
-
-        <button
-          onClick={() => setMode("paste")}
-          className={`px-6 py-2 rounded-lg ${
-            mode === "paste"
-              ? "bg-indigo-600 text-white"
-              : "bg-gray-200"
-          }`}
-        >
-          Paste Text
-        </button>
-      </div>
-
       {/* ================= RECORD MODE ================= */}
-      {mode === "record" && (
-        <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center p-6 bg-gray-50 rounded-2xl border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-700 mb-4">Option 1: Record Audio (Optional)</h3>
 
           <div className="relative w-32 h-32 flex items-center justify-center rounded-full bg-gray-100">
             {!isRecording ? (
@@ -233,17 +205,22 @@ export default function InterviewRecorder({ transcript, onUpdate, onNext }) {
             <p className="text-red-500 mt-2">{transcriptionError}</p>
           )}
         </div>
-      )}
+
+      <div className="flex items-center justify-center">
+        <span className="text-gray-400 font-medium uppercase text-sm bg-white px-3 z-10">OR</span>
+        <div className="absolute w-full max-w-md border-t border-gray-200 -z-0"></div>
+      </div>
 
       {/* ================= PASTE MODE ================= */}
-      {mode === "paste" && (
+      <div className="space-y-2">
+        <label className="block text-sm font-semibold text-gray-700">Option 2: Interview Transcript (Required)</label>
         <textarea
           value={transcript}
           onChange={(e) => onUpdate(e.target.value)}
-          placeholder="Paste interview response here..."
-          className="w-full h-40 p-4 border rounded-xl"
+          placeholder="The transcription will appear here automatically. You can also manually paste the interview text here."
+          className="w-full h-48 p-4 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         />
-      )}
+      </div>
 
       {/* SUBMIT */}
       <div className="flex justify-end">

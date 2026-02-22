@@ -22,8 +22,14 @@ export default function HiringWizard() {
     setCurrentStep(prev => prev + 1);
   };
 
-  const handleBack = () => {
-    setCurrentStep(prev => prev - 1);
+  const handleBack = (targetStep) => {
+    // If a specific step is provided, go to that step
+    if (targetStep && typeof targetStep === 'number' && targetStep >= 1 && targetStep < currentStep) {
+      setCurrentStep(targetStep);
+    } else if (currentStep > 1) {
+      // Otherwise go back one step
+      setCurrentStep(prev => prev - 1);
+    }
   };
 
   const handleRestart = () => {
@@ -39,6 +45,7 @@ export default function HiringWizard() {
           <JobSetup 
             data={wizardData} 
             onNext={handleNext} 
+            onBack={handleBack}
           />
         );
       case 2:
@@ -69,7 +76,8 @@ export default function HiringWizard() {
         return (
           <EvaluationDashboard 
             data={{...wizardData, questions}} 
-            onRestart={handleRestart} 
+            onRestart={handleRestart}
+            onBack={handleBack}
           />
         );
       default:

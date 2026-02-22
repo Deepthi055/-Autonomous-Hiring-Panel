@@ -21,6 +21,29 @@ const FALLBACK_RESULT = {
   recommendation: "No Hire",
 };
 
+/**
+ * Safely converts a value to a number.
+ */
+function safeNumber(val, defaultVal = 0) {
+  const num = Number(val);
+  return isNaN(num) ? defaultVal : num;
+}
+
+/**
+ * Safely parses JSON from LLM response.
+ */
+function safeParseJSON(str) {
+  if (!str || typeof str !== 'string') return {};
+  let cleaned = str.replace(/```json/g, '').replace(/```/g, '');
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (match) cleaned = match[0];
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    return {};
+  }
+}
+
 class BehavioralAgent {
   /**
    * @param {string} resume         - Candidate resume text
@@ -60,35 +83,16 @@ class BehavioralAgent {
    * @returns {Object} Validated evaluation result
    */
   parseResponse(rawResponse) {
-    if (!rawResponse || typeof rawResponse !== "string") {
-      throw new Error("BehavioralAgent received an empty or non-string response.");
-    }
-
-    let parsed;
-    try {
-      // Clean up common JSON errors
-      let jsonString = rawResponse.replace(/,\s*(\]|\})/g, "$1").replace(/\n/g, " ");
-      const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
-      if (jsonMatch) jsonString = jsonMatch[0];
-      
-      parsed = JSON.parse(jsonString);
-    } catch (err) {
-      const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error(`BehavioralAgent failed to parse LLM response as JSON: ${err.message}`);
-      }
-    }
+    const parsed = safeParseJSON(rawResponse);
 
     return {
       agentName: this.agentName,
-      score: normalizeScore(parsed.score),
-      leadershipScore: normalizeScore(parsed.leadershipScore),
-      starCompleteness: typeof parsed.starCompleteness === "number"
-        ? Math.max(0, Math.min(100, parsed.starCompleteness))
+      score: normalizeScore(safeNumber(parsed.score)),
+      leadershipScore: normalizeScore(safeNumber(parsed.leadershipScore)),
+      starCompleteness: typeof parsed.starCompleteness === "number" || typeof parsed.starCompleteness === "string"
+        ? Math.max(0, Math.min(100, safeNumber(parsed.starCompleteness)))
         : 0,
-      culturalFitScore: normalizeScore(parsed.culturalFitScore),
+      culturalFitScore: normalizeScore(safeNumber(parsed.culturalFitScore)),
       strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
       concerns: Array.isArray(parsed.concerns) ? parsed.concerns : [],
       gaps: Array.isArray(parsed.gaps) ? parsed.gaps : [],
